@@ -70,7 +70,7 @@ export default function EditEmployeePage() {
                     getEmployeeById(employeeId),
                 ]);
 
-                if (deptRes.success) setDepartments(deptRes.data || []);
+                if (deptRes.success) setDepartments((deptRes.data || []).filter((dept: any) => dept.name !== "All_Departement"));
                 if (shiftRes.success) setShiftTypes(shiftRes.data || []);
                 if (cycleRes.success) setCycleTimings(cycleRes.data || []);
 

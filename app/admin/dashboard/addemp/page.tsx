@@ -130,7 +130,7 @@ export default function AddEmployeePage() {
         getCycleTimings(),
       ]);
 
-      if (d.success) setDepartments(d.data || []);
+      if (d.success) setDepartments((d.data || []).filter((dept: any) => dept.name !== "All_Departement"));
       if (s.success) setShiftTypes(s.data || []);
       if (c.success) setCycleTimings(c.data || []);
 

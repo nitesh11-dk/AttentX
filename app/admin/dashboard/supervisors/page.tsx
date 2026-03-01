@@ -39,11 +39,11 @@ export default function SupervisorsPage() {
 
     // Registration Modal State
     const [regOpen, setRegOpen] = useState(false);
-    const [regForm, setRegForm] = useState({ username: "", password: "", departmentId: "none" });
+    const [regForm, setRegForm] = useState({ username: "", password: "", departmentId: "" });
 
     // Inline Editing State
     const [editId, setEditId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ username: "", password: "", departmentId: "none" });
+    const [editForm, setEditForm] = useState({ username: "", password: "", departmentId: "" });
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -70,13 +70,13 @@ export default function SupervisorsPage() {
         const res = await upsertSupervisor({
             username: regForm.username,
             password: regForm.password,
-            departmentId: regForm.departmentId === "none" ? undefined : regForm.departmentId
+            departmentId: regForm.departmentId || undefined
         });
 
         if (res.success) {
             toast.success(res.message);
             setRegOpen(false);
-            setRegForm({ username: "", password: "", departmentId: "none" });
+            setRegForm({ username: "", password: "", departmentId: "" });
             loadData();
         } else {
             toast.error(res.message);
@@ -89,13 +89,13 @@ export default function SupervisorsPage() {
         setEditForm({
             username: sup.username,
             password: "",
-            departmentId: sup.departmentId || "none"
+            departmentId: sup.departmentId || ""
         });
     };
 
     const cancelEditing = () => {
         setEditId(null);
-        setEditForm({ username: "", password: "", departmentId: "none" });
+        setEditForm({ username: "", password: "", departmentId: "" });
     };
 
     const handleUpdate = async (id: string) => {
@@ -104,7 +104,7 @@ export default function SupervisorsPage() {
             id,
             username: editForm.username,
             password: editForm.password || undefined,
-            departmentId: editForm.departmentId === "none" ? undefined : editForm.departmentId
+            departmentId: editForm.departmentId || undefined
         });
 
         if (res.success) {
@@ -191,7 +191,6 @@ export default function SupervisorsPage() {
                                             <SelectValue placeholder="Select Authority Type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="none">Full Authority (All Depts)</SelectItem>
                                             {departments.map((d) => (
                                                 <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                                             ))}
@@ -273,7 +272,6 @@ export default function SupervisorsPage() {
                                                                 <SelectValue />
                                                             </SelectTrigger>
                                                             <SelectContent>
-                                                                <SelectItem value="none">Full Authority (All Depts)</SelectItem>
                                                                 {departments.map((d) => (
                                                                     <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                                                                 ))}
@@ -281,12 +279,19 @@ export default function SupervisorsPage() {
                                                         </Select>
                                                     ) : (
                                                         sup.department ? (
-                                                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">
-                                                                {sup.department.name}
-                                                            </span>
+                                                            sup.department.name === "All_Departement" ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[10px] font-black border border-purple-700 uppercase tracking-widest shadow-md shadow-purple-500/20">
+                                                                    <Shield className="h-3 w-3" />
+                                                                    Admin · Full Access
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">
+                                                                    {sup.department.name}
+                                                                </span>
+                                                            )
                                                         ) : (
                                                             <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 uppercase tracking-widest">
-                                                                System Root
+                                                                —
                                                             </span>
                                                         )
                                                     )}
