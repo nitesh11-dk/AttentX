@@ -201,25 +201,25 @@ export default function AttendancePage() {
     const filteredRecords = (summary?.records ?? []).filter((r) => {
         // Department filter (should match returned summary)
         const matchesDept = selectedDept === "all" || r.departmentId === selectedDept;
-        
+
         // Supervisor filter - ensure we only filter if supervisor is selected and supervisorId exists
-        const matchesSupervisor = 
-            selectedSupervisor === "all" || 
+        const matchesSupervisor =
+            selectedSupervisor === "all" ||
             (r.supervisorId && r.supervisorId === selectedSupervisor);
-        
+
         // Search by name or employee code (case-insensitive)
         const searchLower = search.toLowerCase().trim();
         const matchesSearch =
             !searchLower ||
             r.name.toLowerCase().includes(searchLower) ||
             r.empCode.toLowerCase().includes(searchLower);
-        
+
         // Status filter
         const matchesStatus =
             statusFilter === "all" ||
             (statusFilter === "present" && r.isPresent) ||
             (statusFilter === "absent" && !r.isPresent);
-        
+
         return matchesDept && matchesSupervisor && matchesSearch && matchesStatus;
     });
 
@@ -278,7 +278,7 @@ export default function AttendancePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-3 md:p-6 lg:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 p-2 py-8">
             <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
 
                 {/* ── Header ── */}
@@ -304,7 +304,7 @@ export default function AttendancePage() {
                         <RefreshCw className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
                         <span className="hidden sm:inline">Refresh</span>
                     </button>
-                    
+
                     <button
                         onClick={handleExportExcel}
                         disabled={isPending || isExporting || !summary || filteredRecords.length === 0}
@@ -475,8 +475,8 @@ export default function AttendancePage() {
                             <button
                                 onClick={() => setStatusFilter(statusFilter === "present" ? "all" : "present")}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 ${statusFilter === "present"
-                                        ? "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-200"
-                                        : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                                    ? "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-200"
+                                    : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
                                     }`}
                             >
                                 <UserCheck className="h-3.5 w-3.5" />
@@ -485,8 +485,8 @@ export default function AttendancePage() {
                             <button
                                 onClick={() => setStatusFilter(statusFilter === "absent" ? "all" : "absent")}
                                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95 ${statusFilter === "absent"
-                                        ? "bg-red-500 text-white border-red-500 shadow-sm shadow-red-200"
-                                        : "bg-white text-red-500 border-red-200 hover:bg-red-50"
+                                    ? "bg-red-500 text-white border-red-500 shadow-sm shadow-red-200"
+                                    : "bg-white text-red-500 border-red-200 hover:bg-red-50"
                                     }`}
                             >
                                 <UserX className="h-3.5 w-3.5" />

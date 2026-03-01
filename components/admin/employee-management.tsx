@@ -512,14 +512,14 @@ export function CombinedEmployeeDashboard() {
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      
+
       const monthNames = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December",
       ];
       const monthName = monthNames[appliedFilters.month - 1] || "Unknown";
       const fileName = `Attendance_${monthName}_${appliedFilters.year}.xlsx`;
-      
+
       link.href = url;
       link.download = fileName;
       link.click();
@@ -560,7 +560,7 @@ export function CombinedEmployeeDashboard() {
   return (
     <div className="flex flex-col h-full w-full max-w-full bg-slate-50/50">
       {/* 🔹 STICKY TOP FILTER BAR */}
-      <div className="sticky top-0 z-20 w-full max-w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 py-3 md:px-6">
+      <div className="sticky top-0 z-20 w-full max-w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm  py-3 ">
         <div className="max-w-[1600px] mx-auto space-y-3">
           <DashboardHeader
             employeeCount={rows.length}
@@ -604,7 +604,7 @@ export function CombinedEmployeeDashboard() {
         </div>
       </div>
 
-      <div className="flex-1 w-full max-w-full overflow-x-auto overflow-y-auto p-3 md:p-6 lg:p-8">
+      <div className="flex-1 w-full max-w-full overflow-x-auto overflow-y-auto ">
         <div className="w-full max-w-[1600px] min-w-0 mx-auto space-y-6">
           {showSettings && (
             <DisplaySettings

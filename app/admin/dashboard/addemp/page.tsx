@@ -191,7 +191,7 @@ export default function AddEmployeePage() {
 
   /* ---------------- UI ---------------- */
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6">
+    <div className="p-2 py-8 space-y-6">
       <h1 className="text-2xl font-bold text-slate-900 border-l-4 border-blue-600 pl-4">Add Employee</h1>
 
       <Card className="border-slate-200">

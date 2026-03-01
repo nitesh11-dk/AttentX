@@ -118,7 +118,7 @@ export default function AdminsPage() {
     };
 
     return (
-        <div className="p-4 md:p-6 lg:p-8 space-y-6 bg-slate-50/50 min-h-screen">
+        <div className="p-2 py-6 space-y-6 bg-slate-50/50 min-h-screen">
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl border border-blue-100 shadow-sm border-l-4 border-l-blue-600 gap-4">
                 <div>
