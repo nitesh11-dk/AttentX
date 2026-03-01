@@ -40,6 +40,7 @@ export default function SupervisorsPage() {
     // Registration Modal State
     const [regOpen, setRegOpen] = useState(false);
     const [regForm, setRegForm] = useState({ username: "", password: "", departmentId: "" });
+    const [regSubmitAttempted, setRegSubmitAttempted] = useState(false);
 
     // Inline Editing State
     const [editId, setEditId] = useState<string | null>(null);
@@ -65,6 +66,13 @@ export default function SupervisorsPage() {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+        setRegSubmitAttempted(true);
+
+        if (!regForm.departmentId) {
+            toast.error("Please select a department authority before saving.");
+            return;
+        }
+
         setIsSaving(true);
 
         const res = await upsertSupervisor({
@@ -77,6 +85,7 @@ export default function SupervisorsPage() {
             toast.success(res.message);
             setRegOpen(false);
             setRegForm({ username: "", password: "", departmentId: "" });
+            setRegSubmitAttempted(false);
             loadData();
         } else {
             toast.error(res.message);
@@ -143,7 +152,7 @@ export default function SupervisorsPage() {
                     <p className="text-sm text-slate-500 font-medium">Manage administrative access and department authorities</p>
                 </div>
 
-                <Dialog open={regOpen} onOpenChange={setRegOpen}>
+                <Dialog open={regOpen} onOpenChange={(o) => { setRegOpen(o); if (!o) { setRegSubmitAttempted(false); setRegForm({ username: "", password: "", departmentId: "" }); } }}>
                     <DialogTrigger asChild>
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95">
                             <UserPlus className="h-4 w-4 mr-2" />
@@ -182,12 +191,23 @@ export default function SupervisorsPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Department Authority</label>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                                        Department Authority
+                                        <span className="text-red-500 ml-0.5">*</span>
+                                    </label>
                                     <Select
                                         value={regForm.departmentId}
-                                        onValueChange={(val) => setRegForm({ ...regForm, departmentId: val })}
+                                        onValueChange={(val) => {
+                                            setRegForm({ ...regForm, departmentId: val });
+                                            setRegSubmitAttempted(false);
+                                        }}
                                     >
-                                        <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold">
+                                        <SelectTrigger
+                                            className={`h-12 bg-slate-50 rounded-xl font-bold transition-all ${regSubmitAttempted && !regForm.departmentId
+                                                ? "border-2 border-red-400 bg-red-50/50 focus:ring-red-400"
+                                                : "border-slate-200"
+                                                }`}
+                                        >
                                             <SelectValue placeholder="Select Authority Type" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -196,6 +216,11 @@ export default function SupervisorsPage() {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {regSubmitAttempted && !regForm.departmentId && (
+                                        <p className="text-[11px] text-red-500 font-semibold ml-1 flex items-center gap-1">
+                                            <span>⚠</span> Department authority is required
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <Button

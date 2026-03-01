@@ -31,7 +31,7 @@ export async function upsertSupervisor(data: {
         if (data.id) {
             // Update
             const updateData: any = {
-                username: data.username,
+                username: data.username.toLowerCase().trim(),
                 departmentId: data.departmentId || null,
             };
             if (data.password) {
@@ -51,7 +51,7 @@ export async function upsertSupervisor(data: {
             const hashedPassword = await bcrypt.hash(data.password, 10);
             await prisma.user.create({
                 data: {
-                    username: data.username,
+                    username: data.username.toLowerCase().trim(),
                     password: hashedPassword,
                     role: "supervisor",
                     departmentId: data.departmentId || null,

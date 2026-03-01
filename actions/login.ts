@@ -36,14 +36,15 @@ export async function loginUser(
     where: { username },
   });
 
+  console.log(user, "user")
   if (!user) {
-    return { success: false, message: "Invalid credentials" };
+    return { success: false, message: "Invalid credentials 33" };
   }
 
   // 🔐 Compare password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return { success: false, message: "Invalid credentials" };
+    return { success: false, message: "Invalid credentials 44" };
   }
 
   // 🎫 Create JWT (trusted data only)

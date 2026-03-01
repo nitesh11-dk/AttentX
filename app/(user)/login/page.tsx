@@ -16,14 +16,14 @@ export default function LoginPage() {
   const onSubmit = async (data: any) => {
     try {
       const formData = new FormData();
-      formData.append("username", data.username);
+      formData.append("username", data.username.toLowerCase().trim());
       formData.append("password", data.password);
 
       const res = await loginUser(formData);
 
       if (res.success) {
         toast.success(res.message || "✅ Logged in successfully!", {
-          autoClose: 2000,
+          duration: 2000,
         });
 
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
               placeholder="Enter your username"
             />
             {errors.username && (
-              <p className="text-red-500 text-xs">{errors.username.message}</p>
+              <p className="text-red-500 text-xs">{errors.username.message as string}</p>
             )}
           </div>
 
@@ -81,7 +81,7 @@ export default function LoginPage() {
               placeholder="Enter your password"
             />
             {errors.password && (
-              <p className="text-red-500 text-xs">{errors.password.message}</p>
+              <p className="text-red-500 text-xs">{errors.password.message as string}</p>
             )}
           </div>
 
