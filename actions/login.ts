@@ -38,13 +38,13 @@ export async function loginUser(
 
   console.log(user, "user")
   if (!user) {
-    return { success: false, message: "Invalid credentials 33" };
+    return { success: false, message: "User Not Found" };
   }
 
   // 🔐 Compare password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    return { success: false, message: "Invalid credentials 44" };
+    return { success: false, message: "Invalid Password" };
   }
 
   // 🎫 Create JWT (trusted data only)
