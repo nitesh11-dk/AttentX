@@ -5,6 +5,8 @@ import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
+const USERNAME_REGEX = /^[a-z0-9]+$/;
+
 export async function getSupervisors() {
     try {
         console.log("Fetching supervisors...");
@@ -28,10 +30,20 @@ export async function upsertSupervisor(data: {
     departmentId?: string;
 }) {
     try {
+        const username = data.username ? data.username.toLowerCase().trim() : "";
+
+        // ✅ Validate: no spaces, letters + numbers only
+        if (!USERNAME_REGEX.test(username)) {
+            return {
+                success: false,
+                message: "Username must be a single word — only letters and numbers, no spaces or special characters.",
+            };
+        }
+
         if (data.id) {
             // Update
             const updateData: any = {
-                username: data.username.toLowerCase().trim(),
+                username,
                 departmentId: data.departmentId || null,
             };
             if (data.password) {
@@ -51,7 +63,7 @@ export async function upsertSupervisor(data: {
             const hashedPassword = await bcrypt.hash(data.password, 10);
             await prisma.user.create({
                 data: {
-                    username: data.username.toLowerCase().trim(),
+                    username,
                     password: hashedPassword,
                     role: "supervisor",
                     departmentId: data.departmentId || null,

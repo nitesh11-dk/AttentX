@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSupervisors, upsertSupervisor, deleteSupervisor } from "@/actions/supervisors";
-import { getDepartments } from "@/actions/department";
+import { getAdmins, upsertAdmin, deleteAdmin } from "@/actions/admins";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Pencil, Trash2, Check, X, UserPlus, Shield, Save, UserCheck } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Pencil, Trash2, X, UserPlus, ShieldCheck, Save, Lock } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogContent,
@@ -27,72 +24,47 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function SupervisorsPage() {
-    const router = useRouter();
+const PROTECTED_ADMIN_ID = "827861cb-3cf8-48f5-9453-a36f6d912059";
+const USERNAME_REGEX = /^[a-z0-9]*$/;
 
-    const [supervisors, setSupervisors] = useState<any[]>([]);
-    const [departments, setDepartments] = useState<any[]>([]);
+export default function AdminsPage() {
+    const [admins, setAdmins] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Registration Modal State
+    // Register modal
     const [regOpen, setRegOpen] = useState(false);
-    const [regForm, setRegForm] = useState({ username: "", password: "", departmentId: "" });
-    const [regSubmitAttempted, setRegSubmitAttempted] = useState(false);
+    const [regForm, setRegForm] = useState({ username: "", password: "" });
     const [regUsernameError, setRegUsernameError] = useState("");
 
-    // Inline Editing State
+    // Inline edit
     const [editId, setEditId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ username: "", password: "", departmentId: "" });
+    const [editForm, setEditForm] = useState({ username: "", password: "" });
     const [editUsernameError, setEditUsernameError] = useState("");
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
     const loadData = async () => {
         setLoading(true);
-        const [supRes, deptRes] = await Promise.all([getSupervisors(), getDepartments()]);
-
-        if (supRes.success) setSupervisors(supRes.data || []);
-        else toast.error("Failed to load supervisors");
-
-        if (deptRes.success) setDepartments(deptRes.data || []);
-
+        const res = await getAdmins();
+        if (res.success) setAdmins(res.data || []);
+        else toast.error("Failed to load admins");
         setLoading(false);
     };
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
-        setRegSubmitAttempted(true);
-
-        if (regUsernameError) {
-            toast.error("Please fix the username before saving.");
-            return;
-        }
-
-        if (!regForm.departmentId) {
-            toast.error("Please select a department authority before saving.");
-            return;
-        }
+        if (regUsernameError) { toast.error("Please fix the username before saving."); return; }
 
         setIsSaving(true);
-
-        const res = await upsertSupervisor({
-            username: regForm.username,
-            password: regForm.password,
-            departmentId: regForm.departmentId || undefined
-        });
-
+        const res = await upsertAdmin({ username: regForm.username, password: regForm.password });
         if (res.success) {
             toast.success(res.message);
             setRegOpen(false);
-            setRegForm({ username: "", password: "", departmentId: "" });
-            setRegSubmitAttempted(false);
+            setRegForm({ username: "", password: "" });
             setRegUsernameError("");
             loadData();
         } else {
@@ -101,34 +73,26 @@ export default function SupervisorsPage() {
         setIsSaving(false);
     };
 
-    const startEditing = (sup: any) => {
-        setEditId(sup.id);
-        setEditForm({
-            username: sup.username,
-            password: "",
-            departmentId: sup.departmentId || ""
-        });
+    const startEditing = (admin: any) => {
+        setEditId(admin.id);
+        setEditForm({ username: admin.username, password: "" });
+        setEditUsernameError("");
     };
 
     const cancelEditing = () => {
         setEditId(null);
-        setEditForm({ username: "", password: "", departmentId: "" });
+        setEditForm({ username: "", password: "" });
         setEditUsernameError("");
     };
 
     const handleUpdate = async (id: string) => {
-        if (editUsernameError) {
-            toast.error("Please fix the username before saving.");
-            return;
-        }
+        if (editUsernameError) { toast.error("Please fix the username before saving."); return; }
         setIsSaving(true);
-        const res = await upsertSupervisor({
+        const res = await upsertAdmin({
             id,
             username: editForm.username,
             password: editForm.password || undefined,
-            departmentId: editForm.departmentId || undefined
         });
-
         if (res.success) {
             toast.success(res.message);
             setEditId(null);
@@ -142,10 +106,10 @@ export default function SupervisorsPage() {
     const handleDelete = async () => {
         if (!deleteId) return;
         setIsDeleting(true);
-        const res = await deleteSupervisor(deleteId);
+        const res = await deleteAdmin(deleteId);
         if (res.success) {
             toast.success(res.message);
-            setSupervisors(prev => prev.filter(s => s.id !== deleteId));
+            setAdmins(prev => prev.filter(a => a.id !== deleteId));
             setDeleteId(null);
         } else {
             toast.error(res.message);
@@ -155,45 +119,44 @@ export default function SupervisorsPage() {
 
     return (
         <div className="p-4 md:p-6 lg:p-8 space-y-6 bg-slate-50/50 min-h-screen">
-            {/* Header Area */}
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl border border-blue-100 shadow-sm border-l-4 border-l-blue-600 gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <Shield className="h-7 w-7 text-blue-600" />
-                        Supervisor Portal
+                        <ShieldCheck className="h-7 w-7 text-blue-600" />
+                        Admin Portal
                     </h1>
-                    <p className="text-sm text-slate-500 font-medium">Manage administrative access and department authorities</p>
+                    <p className="text-sm text-slate-500 font-medium">Manage administrator accounts and system access</p>
                 </div>
 
-                <Dialog open={regOpen} onOpenChange={(o) => { setRegOpen(o); if (!o) { setRegSubmitAttempted(false); setRegUsernameError(""); setRegForm({ username: "", password: "", departmentId: "" }); } }}>
+                <Dialog open={regOpen} onOpenChange={(o) => { setRegOpen(o); if (!o) { setRegForm({ username: "", password: "" }); setRegUsernameError(""); } }}>
                     <DialogTrigger asChild>
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-blue-500/10 transition-all active:scale-95">
                             <UserPlus className="h-4 w-4 mr-2" />
-                            Register New Supervisor
+                            Register New Admin
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md bg-white rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
                         <DialogHeader className="p-8 bg-blue-600 text-white">
                             <DialogTitle className="text-2xl font-bold flex items-center gap-3">
                                 <UserPlus className="h-7 w-7" />
-                                Create Account
+                                Create Admin Account
                             </DialogTitle>
-                            <p className="text-blue-100 text-sm font-medium mt-1">Register a new supervisor for the system.</p>
+                            <p className="text-blue-100 text-sm font-medium mt-1">Register a new administrator for the system.</p>
                         </DialogHeader>
                         <form onSubmit={handleRegister} className="p-8 space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
                                     <Input
-                                        placeholder="Enter supervisor username"
+                                        placeholder="e.g. Admin123"
                                         required
-                                        className={`h-12 bg-slate-50 rounded-xl focus:ring-2 transition-all font-bold ${regUsernameError ? "border-red-400 border-2 bg-red-50/50 focus:ring-red-400" : "border-slate-200 focus:ring-blue-500"
-                                            }`}
+                                        className={`h-12 bg-slate-50 rounded-xl focus:ring-2 transition-all font-bold ${regUsernameError ? "border-red-400 border-2 bg-red-50/50 focus:ring-red-400" : "border-slate-200 focus:ring-blue-500"}`}
                                         value={regForm.username}
                                         onChange={(e) => {
                                             const val = e.target.value.toLowerCase().replace(/\s/g, "");
                                             setRegForm({ ...regForm, username: val });
-                                            setRegUsernameError(/^[a-z0-9]*$/.test(val) ? "" : "Only letters and numbers allowed — no spaces or special characters");
+                                            setRegUsernameError(USERNAME_REGEX.test(val) ? "" : "Only letters and numbers allowed — no spaces or special characters");
                                         }}
                                     />
                                     {regUsernameError && (
@@ -201,6 +164,7 @@ export default function SupervisorsPage() {
                                             <span>⚠</span> {regUsernameError}
                                         </p>
                                     )}
+                                    <p className="text-[10px] text-slate-400 ml-1">Single word only — letters and numbers, no spaces</p>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
@@ -212,38 +176,6 @@ export default function SupervisorsPage() {
                                         value={regForm.password}
                                         onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
                                     />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
-                                        Department Authority
-                                        <span className="text-red-500 ml-0.5">*</span>
-                                    </label>
-                                    <Select
-                                        value={regForm.departmentId}
-                                        onValueChange={(val) => {
-                                            setRegForm({ ...regForm, departmentId: val });
-                                            setRegSubmitAttempted(false);
-                                        }}
-                                    >
-                                        <SelectTrigger
-                                            className={`h-12 bg-slate-50 rounded-xl font-bold transition-all ${regSubmitAttempted && !regForm.departmentId
-                                                ? "border-2 border-red-400 bg-red-50/50 focus:ring-red-400"
-                                                : "border-slate-200"
-                                                }`}
-                                        >
-                                            <SelectValue placeholder="Select Authority Type" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {departments.map((d) => (
-                                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {regSubmitAttempted && !regForm.departmentId && (
-                                        <p className="text-[11px] text-red-500 font-semibold ml-1 flex items-center gap-1">
-                                            <span>⚠</span> Department authority is required
-                                        </p>
-                                    )}
                                 </div>
                             </div>
                             <Button
@@ -258,12 +190,12 @@ export default function SupervisorsPage() {
                 </Dialog>
             </div>
 
-            {/* List Area */}
+            {/* Table */}
             <Card className="border border-blue-100 shadow-sm rounded-2xl overflow-hidden bg-white">
                 <CardHeader className="bg-blue-50/50 border-b border-blue-100 py-5">
                     <CardTitle className="text-lg font-bold text-slate-700 flex items-center gap-2">
-                        <UserCheck className="h-5 w-5 text-blue-600" />
-                        Active Supervisor Directory
+                        <ShieldCheck className="h-5 w-5 text-blue-600" />
+                        Active Admin Directory
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -272,24 +204,25 @@ export default function SupervisorsPage() {
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
                             <p className="mt-4 text-slate-400 font-bold uppercase tracking-widest text-[10px]">Fetching records...</p>
                         </div>
-                    ) : supervisors.length === 0 ? (
-                        <div className="p-16 text-center text-slate-400 font-medium italic">No supervisors registered yet</div>
+                    ) : admins.length === 0 ? (
+                        <div className="p-16 text-center text-slate-400 font-medium italic">No admins found</div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full">
                                 <thead className="bg-slate-50/80 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Supervisor Details</th>
-                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Access Privilege</th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Admin Details</th>
+                                        <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                                         <th className="px-6 py-5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">Enrollment Date</th>
                                         <th className="px-6 py-5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-widest">Management</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {supervisors.map((sup) => {
-                                        const isEditing = editId === sup.id;
+                                    {admins.map((admin) => {
+                                        const isProtected = admin.id === PROTECTED_ADMIN_ID;
+                                        const isEditing = editId === admin.id;
                                         return (
-                                            <tr key={sup.id} className="hover:bg-blue-50/30 transition-all group">
+                                            <tr key={admin.id} className={`transition-all group ${isProtected ? "bg-amber-50/40" : "hover:bg-blue-50/30"}`}>
                                                 <td className="px-6 py-5">
                                                     {isEditing ? (
                                                         <div className="space-y-2">
@@ -298,62 +231,40 @@ export default function SupervisorsPage() {
                                                                 onChange={(e) => {
                                                                     const val = e.target.value.toLowerCase().replace(/\s/g, "");
                                                                     setEditForm({ ...editForm, username: val });
-                                                                    setEditUsernameError(/^[a-z0-9]*$/.test(val) ? "" : "Only letters and numbers allowed");
+                                                                    setEditUsernameError(USERNAME_REGEX.test(val) ? "" : "Only letters and numbers allowed");
                                                                 }}
-                                                                className={`h-10 rounded-xl text-sm font-bold w-56 bg-white shadow-sm ${editUsernameError ? "border-red-400 border-2" : "border-blue-200"
-                                                                    }`}
+                                                                className={`h-10 rounded-xl text-sm font-bold w-56 bg-white shadow-sm ${editUsernameError ? "border-red-400 border-2" : "border-blue-200"}`}
                                                             />
                                                             {editUsernameError && (
                                                                 <p className="text-[10px] text-red-500 font-semibold w-56">{editUsernameError}</p>
                                                             )}
                                                             <Input
                                                                 type="password"
-                                                                placeholder="Update password (leave blank to keep)"
+                                                                placeholder="New password (leave blank to keep)"
                                                                 value={editForm.password}
                                                                 onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                                                                 className="h-10 border-blue-200 rounded-xl text-xs w-56 bg-white shadow-sm"
                                                             />
                                                         </div>
                                                     ) : (
-                                                        <div className="font-bold text-slate-800 text-lg tracking-tight capitalize">{sup.username}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-bold text-slate-800 text-lg tracking-tight capitalize">{admin.username}</div>
+                                                            {isProtected && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md text-[9px] font-black border border-amber-200 uppercase tracking-widest">
+                                                                    <Lock className="h-2.5 w-2.5" /> Root
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-5">
-                                                    {isEditing ? (
-                                                        <Select
-                                                            value={editForm.departmentId}
-                                                            onValueChange={(val) => setEditForm({ ...editForm, departmentId: val })}
-                                                        >
-                                                            <SelectTrigger className="h-10 border-blue-200 rounded-xl text-xs font-bold w-56 bg-white shadow-sm">
-                                                                <SelectValue />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {departments.map((d) => (
-                                                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    ) : (
-                                                        sup.department ? (
-                                                            sup.department.name === "All_Departement" ? (
-                                                                <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg text-[10px] font-bold border border-purple-200 uppercase tracking-widest">
-                                                                    All Departments
-                                                                </span>
-                                                            ) : (
-                                                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">
-                                                                    {sup.department.name}
-                                                                </span>
-                                                            )
-                                                        ) : (
-                                                            <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black border border-slate-200 uppercase tracking-widest">
-                                                                —
-                                                            </span>
-                                                        )
-                                                    )}
+                                                    <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black border border-blue-100 uppercase tracking-widest">
+                                                        Administrator
+                                                    </span>
                                                 </td>
                                                 <td className="px-6 py-5">
                                                     <div className="text-xs text-slate-400 font-bold uppercase tracking-tight">
-                                                        {new Date(sup.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                        {new Date(admin.createdAt).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5 text-right">
@@ -362,7 +273,8 @@ export default function SupervisorsPage() {
                                                             <>
                                                                 <Button
                                                                     size="icon"
-                                                                    onClick={() => handleUpdate(sup.id)}
+                                                                    onClick={() => handleUpdate(admin.id)}
+                                                                    disabled={isSaving}
                                                                     className="h-9 w-9 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-500/10"
                                                                 >
                                                                     <Save className="h-4 w-4" />
@@ -381,20 +293,24 @@ export default function SupervisorsPage() {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="icon"
-                                                                    onClick={() => startEditing(sup)}
-                                                                    className="h-9 w-9 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-xl"
+                                                                    onClick={() => !isProtected && startEditing(admin)}
+                                                                    disabled={isProtected}
+                                                                    className={`h-9 w-9 rounded-xl ${isProtected ? "text-slate-300 cursor-not-allowed" : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"}`}
+                                                                    title={isProtected ? "Protected admin cannot be edited" : "Edit"}
                                                                 >
                                                                     <Pencil className="h-4 w-4" />
                                                                 </Button>
                                                                 <AlertDialog
-                                                                    open={deleteId === sup.id}
+                                                                    open={deleteId === admin.id}
                                                                     onOpenChange={(o) => !o && setDeleteId(null)}
                                                                 >
                                                                     <Button
                                                                         variant="ghost"
                                                                         size="icon"
-                                                                        className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
-                                                                        onClick={() => setDeleteId(sup.id)}
+                                                                        disabled={isProtected}
+                                                                        className={`h-9 w-9 rounded-xl ${isProtected ? "text-slate-300 cursor-not-allowed" : "text-red-500 hover:text-red-700 hover:bg-red-50"}`}
+                                                                        onClick={() => !isProtected && setDeleteId(admin.id)}
+                                                                        title={isProtected ? "Protected admin cannot be deleted" : "Delete"}
                                                                     >
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>
@@ -404,15 +320,18 @@ export default function SupervisorsPage() {
                                                                                 <Trash2 className="h-8 w-8 text-red-600" />
                                                                             </div>
                                                                             <AlertDialogHeader>
-                                                                                <AlertDialogTitle className="text-2xl font-bold text-slate-900 text-center">Terminate Account?</AlertDialogTitle>
+                                                                                <AlertDialogTitle className="text-2xl font-bold text-slate-900 text-center">Delete Admin Account?</AlertDialogTitle>
                                                                                 <p className="text-sm text-slate-500 font-medium text-center px-4 mt-2">
-                                                                                    This will permanently revoke all system access for <span className="text-blue-600 font-bold">{sup.username}</span>. This procedure is irreversible.
+                                                                                    This will permanently remove <span className="text-blue-600 font-bold capitalize">{admin.username}</span> from the system. This action is irreversible.
                                                                                 </p>
                                                                             </AlertDialogHeader>
                                                                             <AlertDialogFooter className="sm:justify-center gap-3 mt-8">
                                                                                 <AlertDialogCancel className="h-12 border-none bg-slate-100 hover:bg-slate-200 font-bold text-slate-600 rounded-xl px-8 transition-all">Cancel</AlertDialogCancel>
-                                                                                <AlertDialogAction onClick={handleDelete} className="h-12 bg-red-600 hover:bg-red-700 font-bold text-white rounded-xl px-8 shadow-lg shadow-red-600/20 transition-all border-none">
-                                                                                    {isDeleting ? "Terminating..." : "Confirm Deletion"}
+                                                                                <AlertDialogAction
+                                                                                    onClick={handleDelete}
+                                                                                    className="h-12 bg-red-600 hover:bg-red-700 font-bold text-white rounded-xl px-8 shadow-lg shadow-red-600/20 transition-all border-none"
+                                                                                >
+                                                                                    {isDeleting ? "Deleting..." : "Confirm Delete"}
                                                                                 </AlertDialogAction>
                                                                             </AlertDialogFooter>
                                                                         </div>

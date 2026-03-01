@@ -1,8 +1,8 @@
-# Manpower management system
+# Attendx management system
 
 *Automatically synced with your [v0.dev](https://v0.dev) deployments*
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/nitesh-dk/v0-manpower-management-system)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/nitesh-dk/v0-Attendx-management-system)
 [![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/qLC4tuvbYQ9)
 
 ## Overview
@@ -14,7 +14,7 @@ Any changes you make to your deployed app will be automatically pushed to this r
 
 Your project is live at:
 
-**[https://vercel.com/nitesh-dk/v0-manpower-management-system](https://vercel.com/nitesh-dk/v0-manpower-management-system)**
+**[https://vercel.com/nitesh-dk/v0-Attendx-management-system](https://vercel.com/nitesh-dk/v0-Attendx-management-system)**
 
 ## Build your app
 

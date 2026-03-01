@@ -17,7 +17,8 @@ import {
     LogOut,
     PlusCircle,
     FileText,
-    Shield
+    Shield,
+    ShieldCheck
 } from "lucide-react";
 
 import { DataProvider } from "@/components/providers/DataProvider";
@@ -38,6 +39,7 @@ export default function AdminLayout({
         { name: "Add Employee", href: "/admin/dashboard/addemp", icon: PlusCircle },
         { name: "Attendance", href: "/admin/dashboard/attendance", icon: FileText },
         { name: "Manage Supervisors", href: "/admin/dashboard/supervisors", icon: Shield },
+        { name: "Manage Admins", href: "/admin/dashboard/admins", icon: ShieldCheck },
     ];
 
     const handleLogout = async () => {
@@ -57,7 +59,7 @@ export default function AdminLayout({
                 {/* 🔹 FIXED SIDEBAR (Desktop) */}
                 <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-full z-30">
                     <div className="p-6 border-b border-gray-100 italic">
-                        <div className="text-2xl font-black text-gray-900 tracking-tighter">Manpower<span className="text-blue-600">Pro</span></div>
+                        <div className="text-2xl font-black text-gray-900 tracking-tighter">Attendx<span className="text-blue-600">Pro</span></div>
                         <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Admin Dashboard</div>
                     </div>
 
@@ -102,7 +104,7 @@ export default function AdminLayout({
                         }`}
                 >
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                        <div className="text-xl font-black text-gray-900 tracking-tighter">Manpower<span className="text-blue-600">Pro</span></div>
+                        <div className="text-xl font-black text-gray-900 tracking-tighter">Attendx<span className="text-blue-600">Pro</span></div>
                         <button onClick={() => setMobileMenuOpen(false)}>
                             <X className="h-6 w-6 text-gray-400" />
                         </button>
@@ -136,7 +138,7 @@ export default function AdminLayout({
                 <div className="flex-1 md:ml-64 w-full max-w-full flex flex-col min-h-screen relative overflow-x-hidden">
                     {/* 🔹 STICKY TOP NAVIGATION (For Mobile Header) */}
                     <header className="md:hidden h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between sticky top-0 z-20">
-                        <div className="text-xl font-black text-gray-900 tracking-tighter">Manpower<span className="text-blue-600">Pro</span></div>
+                        <div className="text-xl font-black text-gray-900 tracking-tighter">Attendx<span className="text-blue-600">Pro</span></div>
                         <button
                             onClick={() => setMobileMenuOpen(true)}
                             className="p-2 -mr-2 text-gray-400 hover:text-gray-900"
