@@ -52,8 +52,8 @@ function DeptMultiSelect({ departments, selectedIds, onChange, isSuperAdmin, dis
                     <label
                         key={dept.id}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${checked
-                                ? "bg-blue-50 border-blue-300 shadow-sm"
-                                : "bg-slate-50 border-slate-200 hover:border-blue-200 hover:bg-blue-50/30"
+                            ? "bg-blue-50 border-blue-300 shadow-sm"
+                            : "bg-slate-50 border-slate-200 hover:border-blue-200 hover:bg-blue-50/30"
                             }`}
                     >
                         <div
@@ -87,8 +87,8 @@ function SuperAdminToggle({ value, onChange }: SuperAdminToggleProps) {
     return (
         <div
             className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all select-none ${value
-                    ? "bg-purple-50 border-purple-400 shadow-md shadow-purple-100"
-                    : "bg-slate-50 border-slate-200 hover:border-purple-300"
+                ? "bg-purple-50 border-purple-400 shadow-md shadow-purple-100"
+                : "bg-slate-50 border-slate-200 hover:border-purple-300"
                 }`}
             onClick={() => onChange(!value)}
         >
@@ -122,7 +122,7 @@ function DeptBadges({ sup, departments }: { sup: any; departments: any[] }) {
         );
     }
 
-    const accessedIds: string[] = sup.accessedDepartments ?? (sup.departmentId ? [sup.departmentId] : []);
+    const accessedIds: string[] = sup.accessedDepartments ?? [];
     const depts = departments.filter(d => accessedIds.includes(d.id));
 
     if (depts.length === 0) {

@@ -9,17 +9,15 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(uuid())
-  username             String            @unique
-  password             String
-  role                 UserRole
-  departmentId         String?
-  accessedDepartments  String[]          @default([])
-  isSuperAdmin         Boolean           @default(false)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  attendanceEntries    AttendanceEntry[]
-  department           Department?       @relation(fields: [departmentId], references: [id])
+  id                  String            @id @default(uuid())
+  username            String            @unique
+  password            String
+  role                UserRole
+  accessedDepartments String[]          @default([])
+  isSuperAdmin        Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  attendanceEntries   AttendanceEntry[]
 }
 
 model SystemSetting {
@@ -39,7 +37,6 @@ model Department {
   updatedAt         DateTime          @updatedAt
   attendanceEntries AttendanceEntry[]
   employees         Employee[]
-  users             User[]
   cycleTiming       CycleTiming?      @relation(fields: [cycleTimingId], references: [id])
 }
 

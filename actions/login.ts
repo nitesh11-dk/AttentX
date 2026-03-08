@@ -14,7 +14,6 @@ type LoginResponse =
       id: string;
       username: string;
       role: "admin" | "supervisor" | "user";
-      departmentId: string | null;
       accessedDepartments: string[];
       isSuperAdmin: boolean;
     };
@@ -30,32 +29,26 @@ export async function loginUser(
     return { success: false, message: "Username and password are required" };
   }
 
-  // 🔽 Normalize username (FORM SIDE)
   const username = rawUsername.toLowerCase().trim();
 
-  // 🔍 Find user (DB SIDE — lowercase match)
   const user = await prisma.user.findUnique({
     where: { username },
   });
 
-  console.log(user, "user")
   if (!user) {
     return { success: false, message: "User Not Found" };
   }
 
-  // 🔐 Compare password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     return { success: false, message: "Invalid Password" };
   }
 
-  // 🎫 Create JWT (trusted data only)
+  // JWT payload — no departmentId, only accessedDepartments + isSuperAdmin for supervisors
   const token = jwt.sign(
     {
       id: user.id,
       role: user.role,
-      departmentId:
-        user.role === "supervisor" ? user.departmentId : null,
       accessedDepartments:
         user.role === "supervisor" ? user.accessedDepartments : [],
       isSuperAdmin:
@@ -65,7 +58,6 @@ export async function loginUser(
     { expiresIn: "7d" }
   );
 
-  // 🍪 Store JWT in HTTP-only cookie
   cookies().set("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -74,7 +66,6 @@ export async function loginUser(
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  // ✅ Return safe user data
   return {
     success: true,
     message: "Login successful",
@@ -82,7 +73,6 @@ export async function loginUser(
       id: user.id,
       username: user.username,
       role: user.role,
-      departmentId: user.departmentId,
       accessedDepartments: user.accessedDepartments,
       isSuperAdmin: user.isSuperAdmin,
     },

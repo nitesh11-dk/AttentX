@@ -15,7 +15,7 @@ export async function getUserFromToken(token: string) {
     return {
       id: payload.id as string,
       role: payload.role as "admin" | "supervisor",
-      departmentId: (payload.departmentId as string) || null,
+      // No departmentId — supervisors use accessedDepartments only
       accessedDepartments: (payload.accessedDepartments as string[]) || [],
       isSuperAdmin: (payload.isSuperAdmin as boolean) || false,
     };

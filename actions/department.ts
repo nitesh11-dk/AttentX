@@ -198,16 +198,18 @@ export async function getCurrentUserDepartment(): Promise<
             };
         }
 
-        if (!user.departmentId) {
+        // For supervisors: use first accessed department; admins have no dept
+        const deptId = user.accessedDepartments?.[0];
+        if (!deptId) {
             return {
                 success: false,
-                message: "User has no assigned department",
+                message: "No department assigned to this user",
                 data: null,
             };
         }
 
         const department = await prisma.department.findUnique({
-            where: { id: user.departmentId },
+            where: { id: deptId },
         });
 
         if (!department) {

@@ -118,8 +118,8 @@ export async function exportDailyAttendanceToExcel({
     row.getCell(4).value = record.supervisorInName || "-";
     row.getCell(4).alignment = { horizontal: "left", vertical: "middle" };
 
-    // Supervisor Department
-    row.getCell(5).value = record.supervisorInDepartmentName || "-";
+    // Supervisor Department (no longer tracked — supervisors use multi-dept access)
+    row.getCell(5).value = "-";
     row.getCell(5).alignment = { horizontal: "left", vertical: "middle" };
 
     // Cross Department (RED if true)

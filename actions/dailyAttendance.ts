@@ -11,17 +11,13 @@ export interface DailyEmployeeRecord {
     // IN Details
     supervisorInId: string | null;
     supervisorInName: string | null;
-    supervisorInDepartmentId: string | null;
-    supervisorInDepartmentName: string | null;
     supervisorInIsSuperAdmin: boolean;
     // OUT Details
     supervisorOutId: string | null;
     supervisorOutName: string | null;
-    supervisorOutDepartmentId: string | null;
-    supervisorOutDepartmentName: string | null;
     supervisorOutIsSuperAdmin: boolean;
 
-    isCrossDepartment: boolean; // Red flag: IN dept ≠ employee dept AND scanner not super-admin
+    isCrossDepartment: boolean; // Flag: IN dept on entry ≠ employee dept AND scanner not super-admin
     isPresent: boolean;
     isStillIn: boolean;
     wasAutoClosed: boolean;
@@ -29,7 +25,7 @@ export interface DailyEmployeeRecord {
     lastOut: Date | null;
     totalMinutes: number;
     totalHours: number;
-    formattedHours: string; // e.g. "7h 30m"
+    formattedHours: string;
     scanCount: number;
 }
 
@@ -82,10 +78,8 @@ export async function getDailyAttendanceSummary(
                                 select: {
                                     id: true,
                                     username: true,
-                                    departmentId: true,
                                     isSuperAdmin: true,
                                     accessedDepartments: true,
-                                    department: { select: { name: true } },
                                 },
                             },
                         },
@@ -105,8 +99,6 @@ export async function getDailyAttendanceSummary(
         const supervisorInId = firstInEntry?.scannedBy ?? null;
         const supervisorInUser = (firstInEntry?.user as any) ?? null;
         const supervisorInName = supervisorInUser?.username ?? null;
-        const supervisorInDepartmentId = supervisorInUser?.departmentId ?? null;
-        const supervisorInDepartmentName = supervisorInUser?.department?.name ?? null;
         const supervisorInIsSuperAdmin = supervisorInUser?.isSuperAdmin ?? false;
 
         // ── Cross-department check ──
@@ -130,8 +122,6 @@ export async function getDailyAttendanceSummary(
 
         let supervisorOutId: string | null = null;
         let supervisorOutName: string | null = null;
-        let supervisorOutDepartmentId: string | null = null;
-        let supervisorOutDepartmentName: string | null = null;
         let supervisorOutIsSuperAdmin = false;
 
         for (const entry of entries) {
@@ -151,16 +141,12 @@ export async function getDailyAttendanceSummary(
                     const outUser = (entry.user as any) ?? null;
                     supervisorOutId = entry.scannedBy ?? null;
                     supervisorOutName = outUser?.username ?? null;
-                    supervisorOutDepartmentId = outUser?.departmentId ?? null;
-                    supervisorOutDepartmentName = outUser?.department?.name ?? null;
                     supervisorOutIsSuperAdmin = outUser?.isSuperAdmin ?? false;
                 } else {
                     // Auto-closed — clear out details
                     lastOut = null;
                     supervisorOutId = null;
                     supervisorOutName = null;
-                    supervisorOutDepartmentId = null;
-                    supervisorOutDepartmentName = null;
                     supervisorOutIsSuperAdmin = false;
                 }
                 lastIn = null;
@@ -195,13 +181,9 @@ export async function getDailyAttendanceSummary(
             departmentName: emp.department?.name ?? "Unknown",
             supervisorInId,
             supervisorInName,
-            supervisorInDepartmentId,
-            supervisorInDepartmentName,
             supervisorInIsSuperAdmin,
             supervisorOutId,
             supervisorOutName,
-            supervisorOutDepartmentId,
-            supervisorOutDepartmentName,
             supervisorOutIsSuperAdmin,
             isCrossDepartment,
             isPresent,

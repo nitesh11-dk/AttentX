@@ -101,7 +101,6 @@ function AttendanceRow({ rec, index }: { rec: DailyEmployeeRecord; index: number
                                 </span>
                             )}
                         </div>
-                        <span className="text-xs text-slate-500">{rec.supervisorInDepartmentName || "—"}</span>
                     </div>
                 ) : (
                     <span className="text-slate-300">—</span>
@@ -115,10 +114,7 @@ function AttendanceRow({ rec, index }: { rec: DailyEmployeeRecord; index: number
                         {rec.wasAutoClosed ? (
                             <span className="text-xs font-semibold text-orange-500 italic mt-0.5">Auto Closed</span>
                         ) : rec.supervisorOutName ? (
-                            <div className="flex flex-col">
-                                <span className="text-sm font-medium text-slate-700">{rec.supervisorOutName}</span>
-                                <span className="text-xs text-slate-500">{rec.supervisorOutDepartmentName || "—"}</span>
-                            </div>
+                            <span className="text-sm font-medium text-slate-700">{rec.supervisorOutName}</span>
                         ) : (
                             <span className="text-slate-300">—</span>
                         )}

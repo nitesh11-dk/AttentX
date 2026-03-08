@@ -10,7 +10,6 @@ export async function getSupervisors() {
     try {
         const supervisors = await prisma.user.findMany({
             where: { role: "supervisor" },
-            include: { department: true },
             orderBy: { createdAt: "desc" }
         });
         return { success: true, data: supervisors };
@@ -24,14 +23,12 @@ export async function upsertSupervisor(data: {
     id?: string;
     username: string;
     password?: string;
-    departmentId?: string;
     accessedDepartments?: string[];
     isSuperAdmin?: boolean;
 }) {
     try {
         const username = data.username ? data.username.toLowerCase().trim() : "";
 
-        // ✅ Validate: no spaces, letters + numbers only
         if (!USERNAME_REGEX.test(username)) {
             return {
                 success: false,
@@ -42,7 +39,7 @@ export async function upsertSupervisor(data: {
         const isSuperAdmin = data.isSuperAdmin ?? false;
         const accessedDepartments = data.accessedDepartments ?? [];
 
-        // ✅ If not super admin, must have at least one department
+        // If not super admin, must have at least one department
         if (!isSuperAdmin && accessedDepartments.length === 0) {
             return {
                 success: false,
@@ -50,16 +47,10 @@ export async function upsertSupervisor(data: {
             };
         }
 
-        // Use first dept as primary departmentId (legacy compat)
-        const primaryDeptId = isSuperAdmin
-            ? (data.departmentId ?? null)
-            : (accessedDepartments[0] ?? null);
-
         if (data.id) {
             // Update
             const updateData: any = {
                 username,
-                departmentId: primaryDeptId,
                 accessedDepartments,
                 isSuperAdmin,
             };
@@ -83,7 +74,6 @@ export async function upsertSupervisor(data: {
                     username,
                     password: hashedPassword,
                     role: "supervisor",
-                    departmentId: primaryDeptId,
                     accessedDepartments,
                     isSuperAdmin,
                 }

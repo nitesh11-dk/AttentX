@@ -15,14 +15,9 @@ export async function adminRegisterUser(formData: FormData) {
 
   const password = String(formData.get("password") || "");
   const role = formData.get("role") as "admin" | "supervisor";
-  const departmentId = String(formData.get("departmentId") || "");
 
   if (!username || !password || !role) {
     return { success: false, message: "Missing required fields" };
-  }
-
-  if (role === "supervisor" && !departmentId) {
-    return { success: false, message: "Supervisor needs department" };
   }
 
   const exists = await prisma.user.findUnique({
@@ -40,7 +35,7 @@ export async function adminRegisterUser(formData: FormData) {
       username,
       password: hashedPassword,
       role,
-      departmentId: role === "supervisor" ? departmentId : null,
+      // supervisors: use upsertSupervisor action for full multi-dept setup
     },
   });
 
