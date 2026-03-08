@@ -45,10 +45,10 @@ export async function getAttendanceWallet(
         id: string;
         timestamp: Date;
         scanType: "in" | "out";
-        departmentId: string;
-        department: { name: string };
-        scannedBy: string;
-        scannedByUser: { username: string };
+        departmentId: string | null;
+        department: { name: string } | null;
+        scannedBy: string | null;
+        scannedByUser: { username: string } | null;
         autoClosed: boolean;
     }[];
 } | null> {
@@ -97,8 +97,13 @@ export async function getAttendanceWallet(
 // ---------------------- Scan Attendance (IN/OUT) ----------------------
 //
 export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResult> {
-    const user = await getUserFromCookies();
-    if (!user) throw new Error("Unauthorized");
+    const jwtUser = await getUserFromCookies();
+    if (!jwtUser) throw new Error("Unauthorized");
+
+    const user = await prisma.user.findUnique({
+        where: { id: jwtUser.id }
+    });
+    if (!user) throw new Error("User no longer exists");
 
     const { empCode } = input;
 

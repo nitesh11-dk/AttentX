@@ -3,6 +3,8 @@
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
+import prisma from "@/lib/prisma";
+
 export async function getUserFromToken(token: string) {
   if (!token) return null;
 
@@ -15,7 +17,6 @@ export async function getUserFromToken(token: string) {
     return {
       id: payload.id as string,
       role: payload.role as "admin" | "supervisor",
-      // No departmentId — supervisors use accessedDepartments only
       accessedDepartments: (payload.accessedDepartments as string[]) || [],
       isSuperAdmin: (payload.isSuperAdmin as boolean) || false,
     };

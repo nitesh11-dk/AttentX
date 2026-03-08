@@ -12,7 +12,9 @@ interface SupervisorLayoutProps {
 
 export default function SupervisorLayout({ children }: SupervisorLayoutProps) {
     const router = useRouter();
-    const [department, setDepartment] = useState<IDepartment | null>(null);
+    const [departments, setDepartments] = useState<IDepartment[]>([]);
+    const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const handleLogout = async () => {
         try {
@@ -30,10 +32,15 @@ export default function SupervisorLayout({ children }: SupervisorLayoutProps) {
             try {
                 const res = await getCurrentUserDepartment();
                 if (res.success && res.data) {
-                    setDepartment(res.data);
+                    setDepartments(res.data);
+                }
+                if (res.isSuperAdmin) {
+                    setIsSuperAdmin(true);
                 }
             } catch (err) {
                 console.error("Failed to fetch department:", err);
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -45,8 +52,16 @@ export default function SupervisorLayout({ children }: SupervisorLayoutProps) {
             {/* Top Navbar */}
             <header className="w-full bg-white shadow-md border-b px-4 sm:px-6 py-3 flex justify-between items-center">
                 {/* Left: Department Name */}
-                <div className="text-lg font-semibold text-indigo-600">
-                    Department: {department?.name || "Loading..."}
+                <div className="text-sm sm:text-lg font-semibold text-indigo-600 truncate max-w-[60%]">
+                    {loading ? (
+                        "Loading..."
+                    ) : isSuperAdmin ? (
+                        <span className="flex items-center gap-1"><span className="text-purple-600 font-bold">ALL DEPARTMENTS</span> (Super Admin)</span>
+                    ) : departments.length > 0 ? (
+                        `Depts: ${departments.map(d => d.name).join(", ")}`
+                    ) : (
+                        "No Departments Assigned"
+                    )}
                 </div>
 
                 {/* Right: History & Logout */}

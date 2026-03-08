@@ -198,38 +198,62 @@ export async function getCurrentUserDepartment(): Promise<
             };
         }
 
-        // For supervisors: use first accessed department; admins have no dept
-        const deptId = user.accessedDepartments?.[0];
-        if (!deptId) {
+        const dbUser = await prisma.user.findUnique({
+            where: { id: user.id }
+        });
+
+        if (!dbUser) {
             return {
                 success: false,
-                message: "No department assigned to this user",
+                message: "User not found in database",
                 data: null,
             };
         }
 
-        const department = await prisma.department.findUnique({
-            where: { id: deptId },
-        });
+        if (dbUser.role === "supervisor") {
+            if (dbUser.isSuperAdmin) {
+                return {
+                    success: true,
+                    message: "User is super admin",
+                    data: [], // empty means all
+                    isSuperAdmin: true,
+                };
+            }
 
-        if (!department) {
+            const accessedIds = dbUser.accessedDepartments || [];
+            if (accessedIds.length === 0) {
+                return {
+                    success: false,
+                    message: "No department assigned to this user",
+                    data: [],
+                    isSuperAdmin: false,
+                };
+            }
+
+            const departments = await prisma.department.findMany({
+                where: { id: { in: accessedIds } },
+            });
+
             return {
-                success: false,
-                message: "Department not found",
-                data: null,
+                success: true,
+                message: "User departments fetched",
+                data: departments,
+                isSuperAdmin: false,
             };
         }
 
         return {
-            success: true,
-            message: "User department fetched",
-            data: department,
+            success: false,
+            message: "User is not a supervisor",
+            data: null,
+            isSuperAdmin: false,
         };
     } catch (error: any) {
         return {
             success: false,
             message: error.message,
             data: null,
+            isSuperAdmin: false,
         };
     }
 }
