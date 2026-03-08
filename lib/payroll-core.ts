@@ -59,3 +59,34 @@ export function calculateSalaryComponents(input: PayrollInput) {
         combinedHours,
     };
 }
+
+// TODO:
+
+
+/// pf -- perday
+//
+//  escid -- fixed amount per day  , , pt , wbc , mlwf ,
+
+// 16hrs , autoclase ,
+
+// 26 -- 25  --- manufaturing walo ka
+
+// 1 - 31 --produciton
+
+// linkidng the cycle timing  with , depatement ,  , andremoving ffrom , the add employe and edit employe , cycyle timing accorinly
+
+// restrict , superviros to scan , only their subordinates , or asigned , multiple departments also
+
+// face detection module ,
+
+
+// logs edit , and adding is getting issue
+
+// adance , column  gettthig some issue , while editing and updating
+
+/// supervisor , in time nad pit time m at attenace ,stuff
+
+// in statnc,e the filtiest based on the seuperviro is not working ,
+
+
+

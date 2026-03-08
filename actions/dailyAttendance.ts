@@ -14,6 +14,8 @@ export interface DailyEmployeeRecord {
     supervisorDepartmentName: string | null;
     isCrossDepartment: boolean; // Red flag: supervisor dept ≠ employee dept
     isPresent: boolean;
+    isStillIn: boolean;
+    wasAutoClosed: boolean; // Add to track final auto-closed status
     firstIn: Date | null;
     lastOut: Date | null;
     totalMinutes: number;
@@ -102,18 +104,25 @@ export async function getDailyAttendanceSummary(
         let lastIn: { timestamp: Date; departmentId: string } | null = null;
         let firstIn: Date | null = null;
         let lastOut: Date | null = null;
+        let wasAutoClosed = false;
 
         for (const entry of entries) {
             if (entry.scanType === "in") {
                 lastIn = { timestamp: entry.timestamp, departmentId: entry.departmentId };
                 if (!firstIn) firstIn = entry.timestamp;
             } else if (entry.scanType === "out" && lastIn) {
-                const durationMs = entry.timestamp.getTime() - lastIn.timestamp.getTime();
-                if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) {
-                    // Sanity: only count if < 24h
-                    totalMinutes += Math.round(durationMs / 60000);
+                wasAutoClosed = entry.autoClosed; // Update for latest OUT
+                if (!entry.autoClosed) {
+                    const durationMs = entry.timestamp.getTime() - lastIn.timestamp.getTime();
+                    if (durationMs > 0 && durationMs < 24 * 60 * 60 * 1000) {
+                        // Sanity: only count if < 24h
+                        totalMinutes += Math.round(durationMs / 60000);
+                    }
+                    lastOut = entry.timestamp;
+                } else {
+                    // if it was auto closed, we should clear the lastOut from previous shifts so we show AUTO CLOSED only!
+                    lastOut = null;
                 }
-                lastOut = entry.timestamp;
                 lastIn = null;
             }
         }
@@ -126,6 +135,8 @@ export async function getDailyAttendanceSummary(
                 totalMinutes += Math.round(durationMs / 60000);
             }
         }
+
+        const isStillIn = lastIn !== null;
 
         const totalHours = Math.round((totalMinutes / 60) * 100) / 100;
         const h = Math.floor(totalMinutes / 60);
@@ -148,6 +159,8 @@ export async function getDailyAttendanceSummary(
             supervisorDepartmentName,
             isCrossDepartment,
             isPresent,
+            isStillIn,
+            wasAutoClosed,
             firstIn,
             lastOut,
             totalMinutes,

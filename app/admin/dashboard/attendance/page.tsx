@@ -131,10 +131,14 @@ function AttendanceRow({ rec, index }: { rec: DailyEmployeeRecord; index: number
             {/* Last OUT */}
             <td className="hidden sm:table-cell px-3 md:px-4 py-3 text-xs text-slate-600 whitespace-nowrap font-mono">
                 {rec.lastOut ? format(new Date(rec.lastOut), "hh:mm a") : (
-                    rec.isPresent ? (
+                    rec.isStillIn ? (
                         <span className="text-amber-500 font-semibold">Still In</span>
                     ) : (
-                        <span className="text-slate-300">—</span>
+                        rec.wasAutoClosed ? (
+                            <span className="inline-flex items-center bg-orange-100 text-orange-600 border border-orange-300 px-1.5 py-0.5 rounded text-[10px] font-bold">AUTO CLOSED</span>
+                        ) : (
+                            <span className="text-slate-300">—</span>
+                        )
                     )
                 )}
             </td>

@@ -34,9 +34,11 @@ export default function EmployeeLogsPage() {
                 throw new Error("Failed to load attendance wallet");
             }
 
-            const filtered = wallet.entries.filter((e: any) =>
-                e.timestamp.toISOString().startsWith(dateKey)
-            );
+            const filtered = wallet.entries.filter((e: any) => {
+                const tzDate = new Date(e.timestamp);
+                const localDateKey = `${tzDate.getFullYear()}-${String(tzDate.getMonth() + 1).padStart(2, "0")}-${String(tzDate.getDate()).padStart(2, "0")}`;
+                return localDateKey === dateKey;
+            });
 
             setEntries(filtered);
         } catch (err) {

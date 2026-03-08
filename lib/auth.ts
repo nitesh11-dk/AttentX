@@ -15,7 +15,7 @@ export async function getUserFromToken(token: string) {
     return {
       id: payload.id as string,
       role: payload.role as "admin" | "supervisor",
-      departmentId: payload.departmentId || null,
+      departmentId: (payload.departmentId as string) || null,
     };
   } catch (error) {
     console.error("❌ Invalid token:", error);

@@ -8,6 +8,7 @@ import {
     deleteAttendanceEntry,
 } from "@/actions/attendance"; // these call server actions
 import { getDepartments } from "@/actions/department";
+import { getSupervisors } from "@/actions/supervisors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -17,10 +18,11 @@ import { Trash2, Check, X, Plus } from "lucide-react";
 
 export default function DayEntriesTable({ entries: initialEntries, employeeId, dateKey, onDone }: any) {
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ time: "", scanType: "in", departmentId: "" });
+    const [editForm, setEditForm] = useState({ time: "", scanType: "in", departmentId: "", supervisorId: "", autoClosed: false });
     const [departments, setDepartments] = useState<any[]>([]);
+    const [supervisors, setSupervisors] = useState<any[]>([]);
     const [adding, setAdding] = useState(false);
-    const [addForm, setAddForm] = useState({ time: "", scanType: "in", departmentId: "" });
+    const [addForm, setAddForm] = useState({ time: "", scanType: "in", departmentId: "", supervisorId: "" });
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -30,6 +32,9 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
         (async () => {
             const res = await getDepartments();
             if (res.success) setDepartments(res.data || []);
+
+            const svRes = await getSupervisors();
+            if (svRes.success) setSupervisors(svRes.data || []);
         })();
     }, []);
 
@@ -37,36 +42,69 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
         setEntries(initialEntries);
     }, [initialEntries]);
 
-    // helper: build ISO timestamp for dateKey + HH:mm
-    const buildISO = (day: string, hhmm: string) => {
-        // assume hhmm like "09:15" — produce YYYY-MM-DDTHH:MM:00.000Z using local time
-        // We'll construct as `${day}T${hhmm}:00.000Z`
-        return `${day}T${hhmm}:00.000Z`;
+    // helper: build a local-time ISO string for dateKey (YYYY-MM-DD) + HH:mm
+    // The browser's <input type="time"> always gives LOCAL time (e.g. "09:15").
+    // We reconstruct a Date from local components so the server receives the
+    // correct UTC equivalent — no hard-coded "Z" suffix.
+    const buildISO = (day: string, hhmm: string): string => {
+        const [year, month, dayNum] = day.split("-").map(Number);
+        const [hours, minutes] = hhmm.split(":").map(Number);
+        // new Date(year, monthIndex, day, hour, min) → interprets as LOCAL time
+        return new Date(year, month - 1, dayNum, hours, minutes, 0, 0).toISOString();
     };
 
     const onStartEdit = (entry: any) => {
-        const hhmm = new Date(entry.timestamp).toISOString().slice(11, 16);
+        const d = new Date(entry.timestamp);
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mm = String(d.getMinutes()).padStart(2, "0");
         setEditingId(entry.id);
-        setEditForm({ time: hhmm, scanType: entry.scanType, departmentId: entry.departmentId });
+        setEditForm({
+            time: `${hh}:${mm}`,
+            scanType: entry.scanType,
+            departmentId: entry.departmentId || "",
+            supervisorId: entry.scannedBy || "", // may be null for auto-closed
+            autoClosed: entry.autoClosed,
+        });
+    };
+
+    // When a supervisor is picked in the edit form, auto-set their dept
+    const onEditSupervisorChange = (supervisorId: string) => {
+        const sv = supervisors.find((s) => s.id === supervisorId);
+        setEditForm((prev) => ({
+            ...prev,
+            supervisorId,
+            departmentId: sv?.departmentId || prev.departmentId,
+        }));
+    };
+
+    // When a supervisor is picked in the add form, auto-set their dept
+    const onAddSupervisorChange = (supervisorId: string) => {
+        const sv = supervisors.find((s) => s.id === supervisorId);
+        setAddForm((prev) => ({
+            ...prev,
+            supervisorId,
+            departmentId: sv?.departmentId || prev.departmentId,
+        }));
     };
 
     const saveEdit = async (entryId: string) => {
         try {
-            if (!editForm.time || !editForm.departmentId) {
-                toast.error("Time and department required");
+            if (!editForm.time || !editForm.supervisorId) {
+                toast.error("Time and supervisor required");
                 return;
             }
             const iso = buildISO(dateKey, editForm.time);
             const res = await updateAttendanceEntry(entryId, {
                 timestamp: iso,
                 scanType: editForm.scanType as "in" | "out",
-                departmentId: editForm.departmentId,
+                departmentId: editForm.departmentId || undefined,
+                scannedBy: editForm.supervisorId || undefined,
+                autoClosed: editForm.autoClosed,
             });
             if (res.success) {
                 toast.success("Entry updated");
                 setEditingId(null);
-                // Update local state
-                setEntries(prev => prev.map(e => e.id === entryId ? { ...e, timestamp: iso, scanType: editForm.scanType, departmentId: editForm.departmentId } : e));
+                onDone(); // refetch so joined fields (dept name, scannedByUser) are fresh
             } else {
                 toast.error(res.message || "Update failed");
             }
@@ -108,8 +146,14 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
     };
 
     const startAdd = () => {
+        const firstSv = supervisors[0];
         setAdding(true);
-        setAddForm({ time: "09:00", scanType: "in", departmentId: departments[0]?.id || "" });
+        setAddForm({
+            time: "09:00",
+            scanType: "in",
+            supervisorId: firstSv?.id || "",
+            departmentId: firstSv?.departmentId || "",
+        });
     };
 
     const cancelAdd = () => {
@@ -118,8 +162,8 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
 
     const saveAdd = async () => {
         try {
-            if (!addForm.time || !addForm.departmentId) {
-                toast.error("Time and department required");
+            if (!addForm.time || !addForm.supervisorId) {
+                toast.error("Time and supervisor required");
                 return;
             }
             const iso = buildISO(dateKey, addForm.time);
@@ -128,15 +172,13 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                 timestamp: iso,
                 scanType: addForm.scanType as "in" | "out",
                 departmentId: addForm.departmentId,
-                scannedBy: "manual",
+                scannedBy: addForm.supervisorId || undefined,
             });
             if (res.success) {
                 toast.success("Entry added");
                 setAdding(false);
-                // Update local state
-                if (res.data) {
-                    setEntries(prev => [res.data, ...prev]);
-                }
+                // Refetch from server so scannedByUser (and all other joins) are populated correctly
+                onDone();
             } else {
                 toast.error(res.message || "Add failed");
             }
@@ -158,24 +200,38 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
             ) : (
                 <div className="p-2 border rounded-md bg-gray-50">
                     <div className="flex flex-col sm:flex-row gap-2 items-center">
+                        {/* Scan type */}
                         <Select value={addForm.scanType} onValueChange={(v: any) => setAddForm({ ...addForm, scanType: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="in">IN</SelectItem>
                                 <SelectItem value="out">OUT</SelectItem>
                             </SelectContent>
                         </Select>
 
-                        <Input type="time" value={addForm.time} onChange={(e) => setAddForm({ ...addForm, time: e.target.value })} />
+                        {/* Time */}
+                        <Input type="time" value={addForm.time} onChange={(e) => setAddForm({ ...addForm, time: e.target.value })} className="w-36" />
 
-                        <Select value={addForm.departmentId} onValueChange={(v: any) => setAddForm({ ...addForm, departmentId: v })}>
-                            <SelectTrigger><SelectValue placeholder="Select Dept" /></SelectTrigger>
+                        {/* Supervisor — dept auto-fills from their profile */}
+                        <Select value={addForm.supervisorId} onValueChange={onAddSupervisorChange}>
+                            <SelectTrigger><SelectValue placeholder="Scanned by…" /></SelectTrigger>
                             <SelectContent>
-                                {departments.map((d) => (
-                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                {supervisors.map((s) => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                        {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                    </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
+
+                        {/* Auto-filled dept label */}
+                        {addForm.supervisorId && (
+                            <span className="text-sm text-gray-500 whitespace-nowrap">
+                                Dept: <span className="font-medium text-gray-700">
+                                    {supervisors.find(s => s.id === addForm.supervisorId)?.department?.name || "—"}
+                                </span>
+                            </span>
+                        )}
 
                         <div className="flex gap-2">
                             <Button size="sm" onClick={saveAdd}><Check /></Button>
@@ -256,48 +312,74 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                                     </SelectContent>
                                                 </Select>
                                             ) : (
-                                                e.scanType.toUpperCase()
+                                                <span className="flex items-center gap-1.5">
+                                                    <span>{e.scanType.toUpperCase()}</span>
+                                                    {e.autoClosed && (
+                                                        <span className="text-[10px] font-semibold bg-orange-100 text-orange-600 border border-orange-300 px-1 py-0.5 rounded">
+                                                            AUTO
+                                                        </span>
+                                                    )}
+                                                </span>
                                             )}
                                         </td>
 
-                                        {/* DEPARTMENT */}
+                                        {/* DEPARTMENT — auto-filled from supervisor */}
                                         <td className="p-2">
                                             {isEditing ? (
-                                                <Select
-                                                    value={editForm.departmentId}
-                                                    onValueChange={(v: any) =>
-                                                        setEditForm({ ...editForm, departmentId: v })
-                                                    }
-                                                >
-                                                    <SelectTrigger><SelectValue placeholder="Dept" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        {departments.map((d) => (
-                                                            <SelectItem key={d.id} value={d.id}>
-                                                                {d.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                <span className="text-sm text-gray-600">
+                                                    {supervisors.find(s => s.id === editForm.supervisorId)?.department?.name || e.department?.name || "—"}
+                                                </span>
                                             ) : (
                                                 e.department?.name || "Unknown"
                                             )}
                                         </td>
 
-                                        {/* SCANNED BY */}
+                                        {/* SCANNED BY — supervisor dropdown when editing */}
                                         <td className="p-2">
-                                            {e.scannedByUser?.username || e.scannedBy || "Unknown"}
+                                            {isEditing ? (
+                                                <Select value={editForm.supervisorId} onValueChange={onEditSupervisorChange}>
+                                                    <SelectTrigger><SelectValue placeholder="Supervisor…" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {supervisors.map((s) => (
+                                                            <SelectItem key={s.id} value={s.id}>
+                                                                {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            ) : (
+                                                <span className="flex items-center gap-1.5">
+                                                    {e.scannedByUser?.username || "—"}
+                                                    {e.autoClosed && (
+                                                        <span className="text-[10px] font-semibold bg-orange-100 text-orange-600 border border-orange-300 px-1 py-0.5 rounded">
+                                                            No supervisor
+                                                        </span>
+                                                    )}
+                                                </span>
+                                            )}
                                         </td>
 
                                         {/* ACTIONS */}
                                         <td className="p-2">
                                             {isEditing ? (
-                                                <div className="flex gap-2">
+                                                <div className="flex flex-col gap-1">
                                                     <Button size="sm" onClick={() => saveEdit(e.id)}>
                                                         <Check />
                                                     </Button>
                                                     <Button size="sm" variant="outline" onClick={cancelEdit}>
                                                         <X />
                                                     </Button>
+                                                    {/* autoClosed toggle — always visible in edit mode */}
+                                                    <label className={`flex items-center gap-1 text-xs cursor-pointer mt-1 ${editForm.autoClosed ? "text-orange-600" : "text-gray-500"}`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={editForm.autoClosed}
+                                                            onChange={() =>
+                                                                setEditForm((f) => ({ ...f, autoClosed: !f.autoClosed }))
+                                                            }
+                                                        />
+                                                        Auto Closed
+                                                    </label>
                                                 </div>
                                             ) : (
                                                 <div className="flex gap-2">
@@ -361,7 +443,14 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                 <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <div className="font-medium text-lg">{time12}</div>
-                                        <div className="text-sm text-gray-600">{e.scanType.toUpperCase()}</div>
+                                        <div className="text-sm text-gray-600 flex items-center gap-1.5">
+                                            {e.scanType.toUpperCase()}
+                                            {e.autoClosed && (
+                                                <span className="text-[10px] font-semibold bg-orange-100 text-orange-600 border border-orange-300 px-1 py-0.5 rounded">
+                                                    AUTO
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex gap-2">
                                         {isEditing ? (
@@ -412,29 +501,50 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                             </Select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium mb-1">Department</label>
-                                            <Select
-                                                value={editForm.departmentId}
-                                                onValueChange={(v: any) => setEditForm({ ...editForm, departmentId: v })}
-                                            >
+                                            <label className="block text-sm font-medium mb-1">Scanned By</label>
+                                            <Select value={editForm.supervisorId} onValueChange={onEditSupervisorChange}>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select Dept" />
+                                                    <SelectValue placeholder="Select Supervisor" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {departments.map((d) => (
-                                                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                                    {supervisors.map((s) => (
+                                                        <SelectItem key={s.id} value={s.id}>
+                                                            {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
+                                            {editForm.supervisorId && (
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Dept: <span className="font-medium">{supervisors.find(s => s.id === editForm.supervisorId)?.department?.name || "—"}</span>
+                                                </p>
+                                            )}
+                                            {/* autoClosed toggle — always visible in edit mode */}
+                                            <label className={`flex items-center gap-1.5 text-xs cursor-pointer mt-2 ${editForm.autoClosed ? "text-orange-600" : "text-gray-500"}`}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={editForm.autoClosed}
+                                                    onChange={() =>
+                                                        setEditForm((f) => ({ ...f, autoClosed: !f.autoClosed }))
+                                                    }
+                                                />
+                                                Auto Closed
+                                            </label>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-1">
                                         <div className="text-sm">
-                                            <span className="font-medium">Department:</span> {e.department?.name || "Unknown"}
+                                            <span className="font-medium">Department:</span> {e.department?.name || "—"}
                                         </div>
-                                        <div className="text-sm">
-                                            <span className="font-medium">Scanned By:</span> {e.scannedByUser?.username || e.scannedBy || "Unknown"}
+                                        <div className="text-sm flex items-center gap-1.5">
+                                            <span className="font-medium">Scanned By:</span>
+                                            {e.scannedByUser?.username || "—"}
+                                            {e.autoClosed && (
+                                                <span className="text-[10px] font-semibold bg-orange-100 text-orange-600 border border-orange-300 px-1 py-0.5 rounded">
+                                                    No supervisor
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 )}

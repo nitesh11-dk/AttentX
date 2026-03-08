@@ -109,12 +109,12 @@ model AttendanceEntry {
   id           String           @id @default(uuid())
   timestamp    DateTime         @default(now())
   scanType     ScanType
-  departmentId String
-  scannedBy    String
+  departmentId String?          // nullable: null for auto-closed entries
+  scannedBy    String?          // nullable: null for auto-closed entries
   walletId     String
   autoClosed   Boolean          @default(false)
-  department   Department       @relation(fields: [departmentId], references: [id])
-  user         User             @relation(fields: [scannedBy], references: [id])
+  department   Department?      @relation(fields: [departmentId], references: [id])
+  user         User?            @relation(fields: [scannedBy], references: [id])
   wallet       AttendanceWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   @@index([walletId])

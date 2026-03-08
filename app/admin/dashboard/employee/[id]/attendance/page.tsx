@@ -190,6 +190,7 @@ const EmployeeAttendancePage = memo(function EmployeeAttendancePage() {
         <WorkLogTable
           workLogs={workLogs}
           employeeId={employee.id}
+          allEntries={attendanceWallet?.entries || []}
         />
       )}
     </div>

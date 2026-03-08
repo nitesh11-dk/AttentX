@@ -17,8 +17,8 @@ export type RawEntry = {
     id: string;
     timestamp: Date;
     scanType: "in" | "out";
-    departmentId: string;
-    scannedBy: string;
+    departmentId: string | null;  // null for auto-closed entries
+    scannedBy: string | null;     // null for auto-closed entries
     autoClosed: boolean;
 };
 
@@ -125,32 +125,61 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     const userDeptId = user.departmentId;
     if (!userDeptId) throw new Error("Your user has no department assigned");
 
+    const now = new Date();
+    const AUTOCLOSE_THRESHOLD_MS = 16 * 60 * 60 * 1000 + 5 * 60 * 1000; // 16h 5m
+
+    /** Returns the auto-close OUT timestamp, capped to 23:59:59.999 of the IN's
+     *  local calendar day so the OUT always shows in the same day's logs. */
+    const autoCloseTimestamp = (inTs: Date): Date => {
+        const candidate = new Date(inTs.getTime() + AUTOCLOSE_THRESHOLD_MS);
+        // Build "end of IN's local day" = 23:59:59.999
+        const endOfDay = new Date(inTs);
+        endOfDay.setHours(23, 59, 59, 999);
+        return candidate <= endOfDay ? candidate : endOfDay;
+    };
+
+    // ── Step 1: Auto-close any dangling IN that is ≥16 hrs old ──
+    // Runs BEFORE deciding newScanType so a stale IN can never be paired
+    // with an OUT that arrives the next day.
+    if (
+        lastEntry &&
+        lastEntry.scanType === "in" &&
+        now.getTime() - new Date(lastEntry.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS
+    ) {
+        await prisma.attendanceEntry.create({
+            data: {
+                timestamp: autoCloseTimestamp(new Date(lastEntry.timestamp)),
+                scanType: "out",
+                departmentId: lastEntry.departmentId ?? userDeptId,
+                scannedBy: user.id, // use current scanner's id — avoids Prisma null constraint
+                autoClosed: true,
+                walletId: wallet.id,
+            },
+        });
+        // Mark locally as OUT so the direction logic below treats this as "last OUT → new IN"
+        lastEntry.scanType = "out" as any;
+    }
+
+    // ── Step 2: Decide scan direction ──
     let newScanType: "in" | "out" = "in";
     if (lastEntry && lastEntry.scanType === "in") {
-        // if last was "in" then this should be "out"
         newScanType = "out";
     } else {
         newScanType = "in";
     }
 
-    const now = new Date();
-
-    // Auto-close IN from another department:
-    // If we're inserting an IN and lastEntry exists and lastEntry.scanType === "in"
-    // but lastEntry.departmentId !== user.departmentId, create an autoClosed OUT entry
-    // for the lastEntry.departmentId just before the new IN.
+    // ── Step 3: Auto-close consecutive IN from a different department ──
     if (
         newScanType === "in" &&
         lastEntry &&
         lastEntry.scanType === "in" &&
         lastEntry.departmentId !== userDeptId
     ) {
-        // create auto-closed OUT entry with timestamp 1 second before now
         await prisma.attendanceEntry.create({
             data: {
                 timestamp: new Date(now.getTime() - 1000),
                 scanType: "out",
-                departmentId: lastEntry.departmentId,
+                departmentId: lastEntry.departmentId ?? userDeptId,
                 scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
@@ -158,7 +187,7 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
         });
     }
 
-    // create the actual new scan entry
+    // ── Step 4: Create the actual new scan entry ──
     const created = await prisma.attendanceEntry.create({
         data: {
             timestamp: now,
@@ -173,14 +202,14 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     return { employeeId, lastScanType: created.scanType as "in" | "out" };
 }
 
-//
 // ---------------------- Calculate Work Logs ----------------------
-//
 export async function calculateWorkLogs(
     entries: RawEntry[],
     hourlyRate: number = 100
 ) {
-    const workLogMap: Record<string, { totalMinutes: number; departmentId: string; date: string }> = {};
+    // Group by DATE only (not dept+date) so all paired hours on the same day
+    // across different departments are merged into a single row.
+    const workLogMap: Record<string, { totalMinutes: number; date: string }> = {};
     const sortedEntries = [...entries].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     let lastIn: RawEntry | null = null;
@@ -190,21 +219,28 @@ export async function calculateWorkLogs(
 
         if (entry.scanType === "in") {
             lastIn = entry;
-        } else if (entry.scanType === "out" && lastIn && !entry.autoClosed) {
-            const lastDeptId = lastIn.departmentId;
-            const currentDeptId = entry.departmentId;
 
-            if (lastDeptId === currentDeptId) {
-                const durationMinutes = Math.round((entryTime.getTime() - new Date(lastIn.timestamp).getTime()) / (1000 * 60));
-                const dateKey = new Date(lastIn.timestamp).toISOString().slice(0, 10); // YYYY-MM-DD
-                const key = `${currentDeptId}_${dateKey}`;
+            // Ensure the day appears in WorkLogMap even if it only has an IN scan,
+            // or if the OUT scan was autoClosed (and thus excluded from hours).
+            // This way the Admin can still see the day in the table to click and edit it.
+            const inDate = new Date(entry.timestamp);
+            const dateKey = `${inDate.getFullYear()}-${String(inDate.getMonth() + 1).padStart(2, "0")}-${String(inDate.getDate()).padStart(2, "0")}`;
 
-                if (!workLogMap[key]) {
-                    workLogMap[key] = { totalMinutes: 0, departmentId: currentDeptId, date: dateKey };
-                }
-                workLogMap[key].totalMinutes += durationMinutes;
-                lastIn = null;
+            if (!workLogMap[dateKey]) {
+                workLogMap[dateKey] = { totalMinutes: 0, date: dateKey };
             }
+
+        } else if (entry.scanType === "out" && lastIn && !entry.autoClosed) {
+            const durationMinutes = Math.round(
+                (entryTime.getTime() - new Date(lastIn.timestamp).getTime()) / (1000 * 60)
+            );
+            // Use the IN entry's LOCAL date as the day key so e.g. a 3 AM IST
+            // scan doesn't shift to the previous UTC day (IST = UTC+5:30).
+            const inDate = new Date(lastIn.timestamp);
+            const dateKey = `${inDate.getFullYear()}-${String(inDate.getMonth() + 1).padStart(2, "0")}-${String(inDate.getDate()).padStart(2, "0")}`;
+
+            workLogMap[dateKey].totalMinutes += durationMinutes;
+            lastIn = null;
         }
     }
 
@@ -214,7 +250,6 @@ export async function calculateWorkLogs(
         const totalHoursDecimal = Math.round((v.totalMinutes / 60) * 100) / 100;
         return {
             date: new Date(v.date),
-            departmentId: v.departmentId,
             totalHours: totalHoursDecimal,
             hours,
             minutes,
@@ -299,7 +334,13 @@ export async function addTestEntries(employeeId: string) {
 // ---------------------- UPDATE ENTRY ----------------------
 export async function updateAttendanceEntry(
     entryId: string,
-    data: { timestamp?: string; scanType?: "in" | "out"; departmentId?: string }
+    data: {
+        timestamp?: string;
+        scanType?: "in" | "out";
+        departmentId?: string;
+        scannedBy?: string;
+        autoClosed?: boolean;  // allow toggling auto-close flag
+    }
 ) {
     try {
         const updated = await prisma.attendanceEntry.update({
@@ -308,6 +349,8 @@ export async function updateAttendanceEntry(
                 timestamp: data.timestamp ? new Date(data.timestamp) : undefined,
                 scanType: data.scanType,
                 departmentId: data.departmentId,
+                scannedBy: data.scannedBy,
+                autoClosed: data.autoClosed,
             },
         });
 
@@ -323,25 +366,61 @@ export async function addManualAttendanceEntry(data: {
     timestamp: string;
     scanType: "in" | "out";
     departmentId: string;
-    scannedBy: string;
+    scannedBy?: string; // optional supervisor ID; falls back to logged-in admin
 }) {
     try {
+        const user = await getUserFromCookies();
+        if (!user) return { success: false, message: "Unauthorized" };
+
         const wallet = await prisma.attendanceWallet.findUnique({
             where: { employeeId: data.employeeId },
         });
 
         if (!wallet) return { success: false, message: "Wallet not found" };
 
+        // Use provided supervisor ID (if any), else fall back to the current admin
+        const resolvedScannedBy = data.scannedBy || user.id;
+
+        const entryTimestamp = new Date(data.timestamp);
+
         const created = await prisma.attendanceEntry.create({
             data: {
-                timestamp: new Date(data.timestamp),
+                timestamp: entryTimestamp,
                 scanType: data.scanType,
                 departmentId: data.departmentId,
-                scannedBy: data.scannedBy,
+                scannedBy: resolvedScannedBy,
                 walletId: wallet.id,
                 autoClosed: false,
             },
         });
+
+        // ── Auto-close check: if IN was manually added in the past and 16h5m have already elapsed ──
+        // E.g. adding a Mar 7 7AM IN when it's already Mar 8 10AM → create auto-close OUT immediately.
+        // Threshold: 16h 5m. Timestamp is capped to 23:59:59.999 of the IN's local day
+        // so the OUT always shows in the same day's logs, never the next day.
+        const AUTOCLOSE_THRESHOLD_MS = 16 * 60 * 60 * 1000 + 5 * 60 * 1000; // 16h 5m
+        const now = new Date();
+
+        if (
+            data.scanType === "in" &&
+            now.getTime() - entryTimestamp.getTime() >= AUTOCLOSE_THRESHOLD_MS
+        ) {
+            const candidate = new Date(entryTimestamp.getTime() + AUTOCLOSE_THRESHOLD_MS);
+            const endOfDay = new Date(entryTimestamp);
+            endOfDay.setHours(23, 59, 59, 999);
+            const outTimestamp = candidate <= endOfDay ? candidate : endOfDay;
+
+            await prisma.attendanceEntry.create({
+                data: {
+                    timestamp: outTimestamp,
+                    scanType: "out",
+                    departmentId: data.departmentId,
+                    scannedBy: resolvedScannedBy,
+                    walletId: wallet.id,
+                    autoClosed: true,
+                },
+            });
+        }
 
         return { success: true, data: created };
     } catch (e: any) {
