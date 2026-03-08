@@ -21,6 +21,7 @@ interface EmployeeTableProps {
   onDownloadBarcode: (id: string, code: string) => void;
   barcodeRefs: any;
   isBusy: boolean;
+  isBulkRunning?: boolean;
   cycles: any[];
   onExportExcel?: () => void;
   isExporting?: boolean;
@@ -40,6 +41,7 @@ export function EmployeeTable({
   onExportExcel,
   isExporting,
   hasLoadedOnce = false,
+  isBulkRunning = false,
 }: EmployeeTableProps) {
   /* ============================
      TABLE SCROLLING (DRAG TO SCROLL)
@@ -329,7 +331,7 @@ export function EmployeeTable({
                       summary={summary}
                       columnVisibility={columnVisibility}
                       recalcLoading={recalcLoading}
-                      isBusy={isBusy}
+                      isBusy={isBusy || isBulkRunning}
                       onRecalc={onRecalc}
                       onDownloadBarcode={onDownloadBarcode}
                       barcodeRef={(el) => {

@@ -66,6 +66,14 @@ export function CombinedEmployeeDashboard() {
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [hiddenFilters, setHiddenFilters] = useState({ cycle: false, dept: false, shift: false });
 
+  // Bulk Calculation State
+  const [bulkState, setBulkState] = useState({
+    isRunning: false,
+    completed: 0,
+    total: 0,
+  });
+  const stopRequestedRef = useRef(false);
+
   // Employee search filters
   const [searchField, setSearchField] = useState("name");
   const [searchValue, setSearchValue] = useState("");
@@ -167,7 +175,7 @@ export function CombinedEmployeeDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false); // Track if data has been loaded at least once
-  const isBusy = loading || recalcLoading !== null;
+  const isBusy = loading || recalcLoading !== null || bulkState.isRunning;
 
   /* ============================
      HELPERS
@@ -380,45 +388,78 @@ export function CombinedEmployeeDashboard() {
     );
   };
 
-  const recalcAll = async () => {
-    if (!appliedFilters) return;
-    setRecalcLoading("ALL");
+  const handleBulkCalculate = async (mode: "all" | "remaining") => {
+    if (!appliedFilters || rows.length === 0) return;
 
-    try {
-      const { month, year, cycleId } = appliedFilters;
+    // Filter which rows we need to calculate
+    const targetRows = mode === "all" ? rows : rows.filter((r) => !r.summary);
 
-      if (cycleId === "all") {
-        await Promise.all(
-          cycles.map((c) =>
-            calculateMonthlyForAllEmployees({
-              year,
-              month,
-              cycleTimingId: c.id,
-            })
-          )
-        );
-      } else {
-        await calculateMonthlyForAllEmployees({
-          year,
-          month,
-          cycleTimingId: cycleId,
-        });
+    if (targetRows.length === 0) {
+      toast.info("No remaining employees to calculate.");
+      return;
+    }
+
+    setBulkState({ isRunning: true, completed: 0, total: targetRows.length });
+    stopRequestedRef.current = false;
+
+    let successCount = 0;
+
+    for (let i = 0; i < targetRows.length; i++) {
+      // Check if Stop was clicked
+      if (stopRequestedRef.current) {
+        toast.info(`Calculation stopped. Completed ${successCount} of ${targetRows.length}.`);
+        break;
       }
 
-      clearCache("dash_", true);
+      const row = targetRows[i];
+      const employee = row.employee;
 
-      await loadDashboard(
-        month,
-        year,
-        cycleId,
-        appliedFilters.departmentId,
-        appliedFilters.shiftTypeId,
-        appliedFilters.searchField,
-        appliedFilters.searchValue
-      );
-    } finally {
-      setRecalcLoading(null);
+      const cycleToUse =
+        appliedFilters.cycleId !== "all"
+          ? appliedFilters.cycleId
+          : employee.department?.cycleTimingId;
+
+      if (cycleToUse) {
+        try {
+          const res = await calculateMonthlyForEmployee({
+            employeeId: employee.id,
+            year: appliedFilters.year,
+            month: appliedFilters.month,
+            cycleTimingId: cycleToUse,
+          });
+
+          if (res.success && res.data) {
+            updateLocalRow(employee.id, res.data);
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to calculate for ${employee.name}`, error);
+        }
+      }
+
+      // Update Progress
+      setBulkState((prev) => ({ ...prev, completed: i + 1 }));
+
+      // tiny delay to allow UI to breathe
+      await new Promise(r => setTimeout(r, 10));
     }
+
+    if (!stopRequestedRef.current) {
+      toast.success(`Bulk calculation finished. Computed ${successCount} records.`);
+    }
+
+    clearCache("dash_", true);
+    setBulkState({ isRunning: false, completed: 0, total: 0 });
+  };
+
+  const stopBulkCalculate = () => {
+    stopRequestedRef.current = true;
+  };
+
+  const recalcAll = async () => {
+    // Keeping this around for backwards compatibility if needed, 
+    // but the UI will now call handleBulkCalculate('all')
+    handleBulkCalculate("all");
   };
 
   const recalcOne = async (employee: any) => {
@@ -582,6 +623,9 @@ export function CombinedEmployeeDashboard() {
             showSettings={showSettings}
             setShowSettings={setShowSettings}
             onApply={onSearch}
+            bulkState={bulkState}
+            onBulkCalculate={handleBulkCalculate}
+            onStopBulk={() => stopBulkCalculate()}
           />
 
           <FilterBar
@@ -637,6 +681,7 @@ export function CombinedEmployeeDashboard() {
             onDownloadBarcode={downloadBarcode}
             barcodeRefs={barcodeRefs}
             isBusy={isBusy}
+            isBulkRunning={bulkState.isRunning}
             cycles={cycles}
             onExportExcel={handleExportExcel}
             isExporting={isExporting}

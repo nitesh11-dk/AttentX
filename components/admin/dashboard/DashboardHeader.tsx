@@ -12,6 +12,13 @@ interface DashboardHeaderProps {
     showSettings: boolean;
     setShowSettings: (val: boolean) => void;
     onApply: () => void;
+    bulkState?: {
+        isRunning: boolean;
+        completed: number;
+        total: number;
+    };
+    onBulkCalculate?: (mode: "all" | "remaining") => void;
+    onStopBulk?: () => void;
 }
 
 export function DashboardHeader({
@@ -22,6 +29,9 @@ export function DashboardHeader({
     showSettings,
     setShowSettings,
     onApply,
+    bulkState,
+    onBulkCalculate,
+    onStopBulk
 }: DashboardHeaderProps) {
     return (
         <div className="flex items-center justify-between gap-2">
@@ -64,12 +74,69 @@ export function DashboardHeader({
                     <Settings className="h-4 w-4" />
                     <span className="hidden sm:inline ml-1.5">Columns</span>
                 </Button>
+
+                {/* Bulk Actions */}
+                {bulkState && onBulkCalculate && onStopBulk && (
+                    <div className="flex items-center ml-2 border-l border-slate-200 pl-3 gap-2">
+                        {bulkState.isRunning ? (
+                            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-md px-3 py-1.5 shadow-inner">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider leading-none mb-1">
+                                        Calculating...
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-24 h-1.5 bg-blue-200 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-600 rounded-full transition-all duration-300 ease-out"
+                                                style={{ width: `${Math.max(5, (bulkState.completed / bulkState.total) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-semibold text-blue-700 font-mono">
+                                            {bulkState.completed}/{bulkState.total}
+                                        </span>
+                                    </div>
+                                </div>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={onStopBulk}
+                                    className="h-6 px-2 text-xs font-bold"
+                                >
+                                    Stop
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onBulkCalculate("remaining")}
+                                    disabled={isBusy}
+                                    className="h-8 px-2 md:px-3 text-slate-700 bg-white hover:bg-slate-50 border-slate-200"
+                                >
+                                    Calc Remaining
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => onBulkCalculate("all")}
+                                    disabled={isBusy}
+                                    className="h-8 px-2 md:px-3 text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
+                                >
+                                    <Calculator className="h-3.5 w-3.5 mr-1.5" />
+                                    Recalc All
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 <Button
                     variant="default"
                     size="sm"
                     onClick={onApply}
                     disabled={isBusy}
-                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg active:scale-95 transition-all h-8 px-3 md:px-6 font-bold"
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg active:scale-95 transition-all h-8 px-3 md:px-6 font-bold ml-1"
                 >
                     <Search className="h-4 w-4" />
                     <span className="hidden sm:inline ml-1.5">Apply</span>
