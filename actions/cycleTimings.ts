@@ -125,6 +125,7 @@ export async function getCycleTimingById(
 
         return {
             success: true,
+            message: "Cycle timing fetched successfully",
             data: serializeCycleTiming(cycle),
         };
     } catch (error: any) {
@@ -193,16 +194,15 @@ export async function deleteCycleTiming(
     id: string
 ): Promise<ActionResponse> {
     try {
-        // Check if cycle timing has any employees assigned
-        const employeeCount = await prisma.employee.count({
+        // Check if cycle timing has any departments assigned
+        const departmentCount = await prisma.department.count({
             where: { cycleTimingId: id },
         });
 
-        if (employeeCount > 0) {
+        if (departmentCount > 0) {
             return {
                 success: false,
-                message: `Cannot delete cycle timing because it has ${employeeCount} employee(s) assigned. Please reassign them to another cycle first.`,
-                data: null,
+                message: `Cannot delete cycle timing because it is assigned to ${departmentCount} department(s). Please reassign them to another cycle first.`,
             };
         }
 

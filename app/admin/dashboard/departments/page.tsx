@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-    getDepartments,
-    updateDepartment,
-    deleteDepartment,
-    createDepartment,
-} from "@/actions/department";
+import { getDepartments, updateDepartment, deleteDepartment, createDepartment } from "@/actions/department";
+import { getCycleTimings } from "@/actions/cycleTimings";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Pencil, Trash2, Check, X, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -30,6 +27,7 @@ export default function DepartmentsPage() {
     const router = useRouter();
 
     const [departments, setDepartments] = useState<any[]>([]);
+    const [cycleTimings, setCycleTimings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [isCreating, setIsCreating] = useState(false);
@@ -37,35 +35,43 @@ export default function DepartmentsPage() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const [editRowId, setEditRowId] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState({ name: "", description: "" });
+    const [editForm, setEditForm] = useState({ name: "", description: "", cycleTimingId: "null" as string });
 
-    const [newDept, setNewDept] = useState({ name: "", description: "" });
+    const [newDept, setNewDept] = useState({ name: "", description: "", cycleTimingId: "null" as string });
 
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
-    // Load Departments
-    const loadDepartments = async () => {
+    // Load Departments & Cycles
+    const loadData = async () => {
         setLoading(true);
-        const res = await getDepartments();
-        if (res.success) setDepartments(res.data || []);
+        const [deptRes, cycleRes] = await Promise.all([getDepartments(), getCycleTimings()]);
+
+        if (deptRes.success) setDepartments(deptRes.data || []);
         else toast.error("Failed to load departments");
+
+        if (cycleRes.success) setCycleTimings(cycleRes.data || []);
+        else toast.error("Failed to load cycle timings");
+
         setLoading(false);
     };
 
     useEffect(() => {
-        loadDepartments();
+        loadData();
     }, []);
 
     // Create
     const handleCreate = async (e: any) => {
         e.preventDefault();
         setIsCreating(true);
-        const res = await createDepartment(newDept);
+
+        const payload = { ...newDept, cycleTimingId: newDept.cycleTimingId === "null" ? undefined : newDept.cycleTimingId };
+        const res = await createDepartment(payload);
 
         if (res.success) {
             toast.success("Department created");
-            setDepartments((prev) => [res.data, ...prev]); // Add to state
-            setNewDept({ name: "", description: "" });
+            // To ensure relations are loaded, reload departments
+            loadData();
+            setNewDept({ name: "", description: "", cycleTimingId: "null" });
         } else toast.error(res.message);
         setIsCreating(false);
     };
@@ -76,21 +82,22 @@ export default function DepartmentsPage() {
         setEditForm({
             name: dept.name,
             description: dept.description || "",
+            cycleTimingId: dept.cycleTimingId || "null",
         });
     };
 
     // Save Edit
     const handleSave = async (id: string) => {
         setIsUpdating(true);
-        const res = await updateDepartment(id, editForm);
+        const payload = { ...editForm, cycleTimingId: editForm.cycleTimingId === "null" ? null : editForm.cycleTimingId };
+        const res = await updateDepartment(id, payload);
 
         if (res.success) {
             toast.success("Updated successfully");
-            setDepartments((prev) =>
-                prev.map((d) => (d.id === id ? res.data : d))
-            ); // Update in state
+            // Reload to get updated relation
+            loadData();
             setEditRowId(null);
-            setEditForm({ name: "", description: "" });
+            setEditForm({ name: "", description: "", cycleTimingId: "null" });
         } else toast.error(res.message);
         setIsUpdating(false);
     };
@@ -98,7 +105,7 @@ export default function DepartmentsPage() {
     // Cancel edit
     const handleCancel = () => {
         setEditRowId(null);
-        setEditForm({ name: "", description: "" });
+        setEditForm({ name: "", description: "", cycleTimingId: "null" });
     };
 
     // Confirm delete
@@ -145,6 +152,23 @@ export default function DepartmentsPage() {
                             }
                         />
 
+                        <Select
+                            value={newDept.cycleTimingId}
+                            onValueChange={(v) => setNewDept({ ...newDept, cycleTimingId: v })}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select Cycle Timing" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="null">None</SelectItem>
+                                {cycleTimings.map((cycle) => (
+                                    <SelectItem key={cycle.id} value={cycle.id}>
+                                        {cycle.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
                         <Button type="submit" disabled={isCreating} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold">
                             {isCreating ? "Creating..." : "Add Department"}
                         </Button>
@@ -168,6 +192,7 @@ export default function DepartmentsPage() {
                                     <tr>
                                         <th className="border px-2 md:px-3 py-2 text-left">Name</th>
                                         <th className="border px-2 md:px-3 py-2 text-left">Description</th>
+                                        <th className="border px-2 md:px-3 py-2 text-left">Cycle Timing</th>
                                         <th className="border px-2 md:px-3 py-2 text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -210,6 +235,30 @@ export default function DepartmentsPage() {
                                                         />
                                                     ) : (
                                                         dept.description || "—"
+                                                    )}
+                                                </td>
+
+                                                {/* Cycle Timing */}
+                                                <td className="border px-2 md:px-3 py-2">
+                                                    {editing ? (
+                                                        <Select
+                                                            value={editForm.cycleTimingId}
+                                                            onValueChange={(v) => setEditForm({ ...editForm, cycleTimingId: v })}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Cycle Timing" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="null">None</SelectItem>
+                                                                {cycleTimings.map((cycle) => (
+                                                                    <SelectItem key={cycle.id} value={cycle.id}>
+                                                                        {cycle.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    ) : (
+                                                        dept.cycleTiming?.name || "—"
                                                     )}
                                                 </td>
 

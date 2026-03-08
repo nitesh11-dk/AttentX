@@ -84,7 +84,7 @@ export async function getEmployeesWithMonthlySummary(input: {
   // This ensures all 96 employees are always shown when viewing with "all" cycles
   const cycleFilter =
     cycleTimingId && cycleTimingId !== "all"
-      ? { cycleTimingId } // Specific cycle: only employees assigned to that cycle
+      ? { department: { cycleTimingId } } // Specific cycle: only employees with a department assigned to that cycle
       : {}; // "all" cycles: include ALL employees (no filter)
 
   const deptFilter =
@@ -105,9 +105,12 @@ export async function getEmployeesWithMonthlySummary(input: {
       ...searchFilter,
     },
     include: {
-      department: true,
+      department: {
+        include: {
+          cycleTiming: true
+        }
+      },
       shiftType: true,
-      cycleTiming: true,
       monthlySummaries: {
         where: {
           cycleStart: { in: validCycles.map(v => v.cycleStart) }
@@ -122,7 +125,7 @@ export async function getEmployeesWithMonthlySummary(input: {
     // Find the summary that matches this employee's cycle
     const summary = emp.monthlySummaries.find((s: any) =>
       dayjs(s.cycleStart).isSame(
-        validCycles.find(v => v.cycleTimingId === emp.cycleTimingId)?.cycleStart
+        validCycles.find(v => v.cycleTimingId === emp.department?.cycleTimingId)?.cycleStart
       )
     );
 
@@ -334,8 +337,12 @@ export async function calculateMonthlyForAllEmployees(input: {
 
   const employees = await prisma.employee.findMany({
     where: {
-      cycleTimingId,
-      departmentId: departmentId && departmentId !== "all" ? departmentId : undefined,
+      department: {
+        id: departmentId && departmentId !== "all" ? departmentId : undefined,
+        cycleTiming: {
+          id: cycleTimingId
+        }
+      },
       shiftTypeId: shiftTypeId && shiftTypeId !== "all" ? shiftTypeId : undefined,
       joinedAt: {
         lte: new Date(year, month, 0, 23, 59, 59),

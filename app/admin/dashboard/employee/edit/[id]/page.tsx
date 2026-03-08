@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { updateEmployee, getEmployeeById } from "@/actions/employeeActions";
 import { getDepartments } from "@/actions/department";
 import { getShiftTypes } from "@/actions/shiftType";
-import { getCycleTimings } from "@/actions/cycleTimings";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,6 @@ export default function EditEmployeePage() {
 
     const [departments, setDepartments] = useState<any[]>([]);
     const [shiftTypes, setShiftTypes] = useState<any[]>([]);
-    const [cycleTimings, setCycleTimings] = useState<any[]>([]);
 
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +39,6 @@ export default function EditEmployeePage() {
         mobile: "",
         departmentId: "",
         shiftTypeId: null as string | null,
-        cycleTimingId: null as string | null,
         pfId: "",
         pfActive: true,
         pfAmountPerDay: 0,
@@ -73,16 +70,14 @@ export default function EditEmployeePage() {
 
         const load = async () => {
             try {
-                const [deptRes, shiftRes, cycleRes, empRes] = await Promise.all([
+                const [deptRes, shiftRes, empRes] = await Promise.all([
                     getDepartments(),
                     getShiftTypes(),
-                    getCycleTimings(),
                     getEmployeeById(employeeId),
                 ]);
 
                 if (deptRes.success) setDepartments((deptRes.data || []).filter((dept: any) => dept.name !== "All_Departement"));
                 if (shiftRes.success) setShiftTypes(shiftRes.data || []);
-                if (cycleRes.success) setCycleTimings(cycleRes.data || []);
 
                 if (empRes.success && empRes.data) {
                     const emp = empRes.data;
@@ -93,7 +88,6 @@ export default function EditEmployeePage() {
                         mobile: emp.mobile,
                         departmentId: emp.departmentId,
                         shiftTypeId: emp.shiftTypeId ?? null,
-                        cycleTimingId: emp.cycleTimingId ?? null,
                         pfId: emp.pfId || "",
                         pfActive: emp.pfActive,
                         pfAmountPerDay: emp.pfAmountPerDay || 0,
@@ -192,7 +186,6 @@ export default function EditEmployeePage() {
                 mlwfAmountPerDay: Number(formData.mlwfAmountPerDay),
                 dob: formData.dob ? new Date(formData.dob) : null,
                 shiftTypeId: formData.shiftTypeId,
-                cycleTimingId: formData.cycleTimingId,
                 joinedAt: new Date(formData.joinedAt), // ✅ VERY IMPORTANT
             };
 
@@ -403,15 +396,6 @@ export default function EditEmployeePage() {
                                     items={shiftTypes}
                                     onChange={(v) => setFormData({ ...formData, shiftTypeId: v === "null" ? null : v })}
                                     display={(x) => `${x.name} — ${x.totalHours} hrs`}
-                                    allowNull
-                                />
-
-                                <SelectField
-                                    label="Cycle Timing"
-                                    value={formData.cycleTimingId ?? "null"}
-                                    items={cycleTimings}
-                                    onChange={(v) => setFormData({ ...formData, cycleTimingId: v === "null" ? null : v })}
-                                    display={(c) => `${c.name} (Start: ${c.startDay})`}
                                     allowNull
                                 />
                             </div>

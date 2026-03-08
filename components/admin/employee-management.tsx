@@ -429,7 +429,7 @@ export function CombinedEmployeeDashboard() {
       const cycleToUse =
         appliedFilters.cycleId !== "all"
           ? appliedFilters.cycleId
-          : employee.cycleTimingId;
+          : employee.department?.cycleTimingId;
 
       if (!cycleToUse) return;
 

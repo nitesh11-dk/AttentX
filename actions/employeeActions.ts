@@ -138,7 +138,6 @@ export async function createEmployee(
 
         departmentId: data.departmentId,
         shiftTypeId: data.shiftTypeId || null,
-        cycleTimingId: data.cycleTimingId || null,
 
         profileComplete: true,
       },
@@ -244,9 +243,12 @@ export async function getEmployeeById(
   try {
     const emp = await prisma.employee.findUnique({
       where: { id }, include: {
-        department: true,
+        department: {
+          include: {
+            cycleTiming: true
+          }
+        },
         shiftType: true,
-        cycleTiming: true,
       },
     });
     if (!emp) return { success: false, message: "Employee not found" };
@@ -360,7 +362,7 @@ export async function updateEmployee(
     /* ----------------------------
        FK NULL HANDLING
     ---------------------------- */
-    const nullableForeignKeys = ["shiftTypeId", "cycleTimingId"];
+    const nullableForeignKeys = ["shiftTypeId"];
 
     for (const field of nullableForeignKeys) {
       if (updates[field] === "" || updates[field] === "null") {

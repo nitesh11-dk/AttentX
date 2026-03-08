@@ -321,7 +321,7 @@ export function EmployeeTable({
               <tbody className="bg-white divide-y divide-gray-100">
                 {/* DATA ROWS */}
                 {rows.map(({ employee, summary }) => {
-                  const cycle = getCycleById(employee.cycleTimingId);
+                  const cycle = getCycleById(employee.department?.cycleTimingId);
                   return (
                     <EmployeeRow
                       key={`${employee.id}-${summary?.cycleStart || "no-summary"}`}

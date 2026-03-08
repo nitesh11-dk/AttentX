@@ -11,7 +11,6 @@ import * as z from "zod";
 import { createEmployee as createEmployeeAction } from "@/actions/employeeActions";
 import { getDepartments } from "@/actions/department";
 import { getShiftTypes } from "@/actions/shiftType";
-import { getCycleTimings } from "@/actions/cycleTimings";
 
 import {
   Card,
@@ -44,7 +43,6 @@ const employeeSchema = z.object({
   departmentId: z.string().min(1, "Department is required"),
 
   shiftTypeId: z.string().nullable(),
-  cycleTimingId: z.string().nullable(),
 
   pfId: z.string().nullable(),
   pfActive: z.boolean().optional(),
@@ -89,7 +87,6 @@ export default function AddEmployeePage() {
 
   const [departments, setDepartments] = useState<any[]>([]);
   const [shiftTypes, setShiftTypes] = useState<any[]>([]);
-  const [cycleTimings, setCycleTimings] = useState<any[]>([]);
 
   const [loadingMaster, setLoadingMaster] = useState(true);
   const [generatedEmployee, setGeneratedEmployee] = useState<any>(null);
@@ -113,7 +110,6 @@ export default function AddEmployeePage() {
 
       departmentId: "",
       shiftTypeId: null,
-      cycleTimingId: null,
 
       pfId: null,
       pfActive: true,
@@ -148,15 +144,13 @@ export default function AddEmployeePage() {
     (async () => {
       setLoadingMaster(true);
 
-      const [d, s, c] = await Promise.all([
+      const [d, s] = await Promise.all([
         getDepartments(),
         getShiftTypes(),
-        getCycleTimings(),
       ]);
 
       if (d.success) setDepartments((d.data || []).filter((dept: any) => dept.name !== "All_Departement"));
       if (s.success) setShiftTypes(s.data || []);
-      if (c.success) setCycleTimings(c.data || []);
 
       setLoadingMaster(false);
     })();
@@ -207,7 +201,7 @@ export default function AddEmployeePage() {
       <div className="h-[60vh] flex flex-col items-center justify-center space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         <p className="text-gray-500 text-center">
-          Loading departments, shift types & cycle timings...
+          Loading departments & shift types...
         </p>
       </div>
     );
@@ -242,7 +236,7 @@ export default function AddEmployeePage() {
             </div>
 
             {/* DEPARTMENT & ASSIGNMENTS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SelectBlock
                 label="Department *"
                 name="departmentId"
@@ -258,15 +252,6 @@ export default function AddEmployeePage() {
                 items={shiftTypes}
                 nullable
                 render={(s: any) => `${s.name} (${s.totalHours} hrs)`}
-              />
-
-              <SelectBlock
-                label="Cycle Timing"
-                name="cycleTimingId"
-                control={control}
-                items={cycleTimings}
-                nullable
-                render={(c: any) => `${c.name} (Start ${c.startDay})`}
               />
             </div>
 

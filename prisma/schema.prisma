@@ -32,11 +32,13 @@ model Department {
   id                String            @id @default(uuid())
   name              String            @unique
   description       String?
+  cycleTimingId     String?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   attendanceEntries AttendanceEntry[]
   employees         Employee[]
   users             User[]
+  cycleTiming       CycleTiming?      @relation(fields: [cycleTimingId], references: [id])
 }
 
 model Employee {
@@ -55,7 +57,6 @@ model Employee {
   shiftTypeId       String?
   bankAccountNumber String?
   currentAddress    String?
-  cycleTimingId     String?
   dob               DateTime?
   esicActive        Boolean                    @default(true)
   ifscCode          String?
@@ -75,22 +76,21 @@ model Employee {
   mlwfActive        Boolean                    @default(true)
   mlwfAmountPerDay  Float?                     @default(0)
   attendanceWallet  AttendanceWallet?
-  cycleTiming       CycleTiming?               @relation(fields: [cycleTimingId], references: [id])
   department        Department                 @relation(fields: [departmentId], references: [id])
   shiftType         ShiftType?                 @relation(fields: [shiftTypeId], references: [id])
   monthlySummaries  MonthlyAttendanceSummary[]
 }
 
 model CycleTiming {
-  id          String     @id @default(uuid())
+  id          String       @id @default(uuid())
   name        String
   startDay    Int
   description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   span        CycleSpan
   endDay      Int
-  employees   Employee[]
+  departments Department[]
 }
 
 model MonthlyAttendanceSummary {

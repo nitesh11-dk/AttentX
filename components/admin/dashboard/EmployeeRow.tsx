@@ -95,8 +95,8 @@ export function EmployeeRow({
 
     const totalDeductions = Object.values(localDeductions).reduce((a: number, b: any) => a + Number(b || 0), 0);
 
-    // Employee is unassigned if no cycle timing is set
-    const isUnassigned = !employee.cycleTimingId;
+    // Employee is unassigned if no cycle timing is set on their department
+    const isUnassigned = !employee.department?.cycleTimingId;
 
     return (
         <tr className={`bg-white hover:bg-gray-100 transition-colors cursor-pointer border-b border-gray-100 ${isUnassigned ? 'border-l-2 border-l-red-400' : ''}`}>

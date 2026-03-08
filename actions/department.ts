@@ -8,7 +8,7 @@ import { ActionResponse } from "@/lib/types/types";
  * CREATE a new department
  */
 export async function createDepartment(
-    data: { name: string; description?: string }
+    data: { name: string; description?: string; cycleTimingId?: string }
 ): Promise<ActionResponse<any>> {
     try {
         const department = await prisma.department.create({
@@ -36,6 +36,7 @@ export async function getDepartments(): Promise<
 > {
     try {
         const departments = await prisma.department.findMany({
+            include: { cycleTiming: true },
             orderBy: { createdAt: "desc" },
         });
 
@@ -62,6 +63,7 @@ export async function getDepartmentById(
     try {
         const department = await prisma.department.findUnique({
             where: { id },
+            include: { cycleTiming: true },
         });
 
         if (!department) {
@@ -91,7 +93,7 @@ export async function getDepartmentById(
  */
 export async function updateDepartment(
     id: string,
-    data: Partial<{ name: string; description: string }>
+    data: Partial<{ name: string; description: string; cycleTimingId: string | null }>
 ): Promise<ActionResponse<any | null>> {
     try {
         const department = await prisma.department.update({
