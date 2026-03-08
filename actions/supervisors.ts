@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 
@@ -9,13 +8,11 @@ const USERNAME_REGEX = /^[a-z0-9]+$/;
 
 export async function getSupervisors() {
     try {
-        console.log("Fetching supervisors...");
         const supervisors = await prisma.user.findMany({
             where: { role: "supervisor" },
             include: { department: true },
             orderBy: { createdAt: "desc" }
         });
-        console.log(`Found ${supervisors.length} supervisors:`, supervisors.map(s => s.username));
         return { success: true, data: supervisors };
     } catch (err) {
         console.error("Fetch supervisors error:", err);
@@ -28,6 +25,8 @@ export async function upsertSupervisor(data: {
     username: string;
     password?: string;
     departmentId?: string;
+    accessedDepartments?: string[];
+    isSuperAdmin?: boolean;
 }) {
     try {
         const username = data.username ? data.username.toLowerCase().trim() : "";
@@ -40,11 +39,29 @@ export async function upsertSupervisor(data: {
             };
         }
 
+        const isSuperAdmin = data.isSuperAdmin ?? false;
+        const accessedDepartments = data.accessedDepartments ?? [];
+
+        // ✅ If not super admin, must have at least one department
+        if (!isSuperAdmin && accessedDepartments.length === 0) {
+            return {
+                success: false,
+                message: "Please assign at least one department to this supervisor, or make them a Super Admin.",
+            };
+        }
+
+        // Use first dept as primary departmentId (legacy compat)
+        const primaryDeptId = isSuperAdmin
+            ? (data.departmentId ?? null)
+            : (accessedDepartments[0] ?? null);
+
         if (data.id) {
             // Update
             const updateData: any = {
                 username,
-                departmentId: data.departmentId || null,
+                departmentId: primaryDeptId,
+                accessedDepartments,
+                isSuperAdmin,
             };
             if (data.password) {
                 updateData.password = await bcrypt.hash(data.password, 10);
@@ -66,7 +83,9 @@ export async function upsertSupervisor(data: {
                     username,
                     password: hashedPassword,
                     role: "supervisor",
-                    departmentId: data.departmentId || null,
+                    departmentId: primaryDeptId,
+                    accessedDepartments,
+                    isSuperAdmin,
                 }
             });
             revalidatePath("/admin/dashboard/supervisors");

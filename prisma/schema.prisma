@@ -9,15 +9,17 @@ datasource db {
 }
 
 model User {
-  id                String            @id @default(uuid())
-  username          String            @unique
-  password          String
-  role              UserRole
-  departmentId      String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  attendanceEntries AttendanceEntry[]
-  department        Department?       @relation(fields: [departmentId], references: [id])
+  id                   String            @id @default(uuid())
+  username             String            @unique
+  password             String
+  role                 UserRole
+  departmentId         String?
+  accessedDepartments  String[]          @default([])
+  isSuperAdmin         Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  attendanceEntries    AttendanceEntry[]
+  department           Department?       @relation(fields: [departmentId], references: [id])
 }
 
 model SystemSetting {

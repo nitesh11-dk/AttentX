@@ -23,6 +23,17 @@ export type RawEntry = {
 };
 
 //
+// ── Helper: check if supervisor has access to a specific department ──
+//
+function supervisorHasAccess(
+    user: { isSuperAdmin: boolean; accessedDepartments: string[] },
+    departmentId: string
+): boolean {
+    if (user.isSuperAdmin) return true;
+    return user.accessedDepartments.includes(departmentId);
+}
+
+//
 // ---------------------- Get full attendance wallet ----------------------
 //
 export async function getAttendanceWallet(
@@ -94,11 +105,25 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     // find employee by empCode
     const employee = await prisma.employee.findUnique({
         where: { empCode },
-        select: { id: true, departmentId: true },
+        select: {
+            id: true,
+            departmentId: true,
+            department: { select: { name: true } }
+        },
     });
     if (!employee) throw new Error("Employee not found");
 
     const employeeId = employee.id;
+    const employeeDeptId = employee.departmentId;
+    const employeeDeptName = employee.department?.name ?? employeeDeptId;
+
+    // ── ACCESS CHECK: Supervisor must have authority over the employee's department ──
+    if (!supervisorHasAccess(user, employeeDeptId)) {
+        throw new Error(
+            `Access Denied: You do not have authority over the "${employeeDeptName}" department. ` +
+            `Contact admin to update your department access.`
+        );
+    }
 
     // find or create wallet
     let wallet = await prisma.attendanceWallet.findUnique({
@@ -121,9 +146,6 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
 
     // find last entry for this employee (the latest entry)
     const lastEntry = wallet.entries.length > 0 ? wallet.entries[wallet.entries.length - 1] : null;
-
-    const userDeptId = user.departmentId;
-    if (!userDeptId) throw new Error("Your user has no department assigned");
 
     const now = new Date();
     const AUTOCLOSE_THRESHOLD_MS = 16 * 60 * 60 * 1000 + 5 * 60 * 1000; // 16h 5m
@@ -150,8 +172,8 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
             data: {
                 timestamp: autoCloseTimestamp(new Date(lastEntry.timestamp)),
                 scanType: "out",
-                departmentId: lastEntry.departmentId ?? userDeptId,
-                scannedBy: user.id, // use current scanner's id — avoids Prisma null constraint
+                departmentId: lastEntry.departmentId ?? employeeDeptId,
+                scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
             },
@@ -168,18 +190,22 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
         newScanType = "in";
     }
 
-    // ── Step 3: Auto-close consecutive IN from a different department ──
+    // ── Step 3: Cross-department consecutive IN check ──
+    // If there's a dangling IN from a department different from the employee's dept,
+    // auto-close it before creating the new IN.
+    // NOTE: We allow the current OUT even if IN was from a different supervisor,
+    // as long as the current supervisor has access to the employee's department.
     if (
         newScanType === "in" &&
         lastEntry &&
         lastEntry.scanType === "in" &&
-        lastEntry.departmentId !== userDeptId
+        lastEntry.departmentId !== employeeDeptId
     ) {
         await prisma.attendanceEntry.create({
             data: {
                 timestamp: new Date(now.getTime() - 1000),
                 scanType: "out",
-                departmentId: lastEntry.departmentId ?? userDeptId,
+                departmentId: lastEntry.departmentId ?? employeeDeptId,
                 scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
@@ -188,11 +214,12 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     }
 
     // ── Step 4: Create the actual new scan entry ──
+    // Always tag with employee's actual departmentId (not supervisor's dept)
     const created = await prisma.attendanceEntry.create({
         data: {
             timestamp: now,
             scanType: newScanType,
-            departmentId: userDeptId,
+            departmentId: employeeDeptId,
             scannedBy: user.id,
             autoClosed: false,
             walletId: wallet.id,
@@ -395,9 +422,6 @@ export async function addManualAttendanceEntry(data: {
         });
 
         // ── Auto-close check: if IN was manually added in the past and 16h5m have already elapsed ──
-        // E.g. adding a Mar 7 7AM IN when it's already Mar 8 10AM → create auto-close OUT immediately.
-        // Threshold: 16h 5m. Timestamp is capped to 23:59:59.999 of the IN's local day
-        // so the OUT always shows in the same day's logs, never the next day.
         const AUTOCLOSE_THRESHOLD_MS = 16 * 60 * 60 * 1000 + 5 * 60 * 1000; // 16h 5m
         const now = new Date();
 

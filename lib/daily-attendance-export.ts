@@ -115,11 +115,11 @@ export async function exportDailyAttendanceToExcel({
     row.getCell(3).alignment = { horizontal: "left", vertical: "middle" };
 
     // Supervisor Name
-    row.getCell(4).value = record.supervisorName || "-";
+    row.getCell(4).value = record.supervisorInName || "-";
     row.getCell(4).alignment = { horizontal: "left", vertical: "middle" };
 
     // Supervisor Department
-    row.getCell(5).value = record.supervisorDepartmentName || "-";
+    row.getCell(5).value = record.supervisorInDepartmentName || "-";
     row.getCell(5).alignment = { horizontal: "left", vertical: "middle" };
 
     // Cross Department (RED if true)

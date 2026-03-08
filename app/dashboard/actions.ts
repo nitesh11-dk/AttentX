@@ -5,15 +5,15 @@ import { scanEmployee as scanEmployeeCore } from "@/actions/attendance";
 
 export type ScanResult =
   | {
-      success: true;
-      empCode: string;
-      employeeName: string;
-      lastScanType: "in" | "out";
-    }
+    success: true;
+    empCode: string;
+    employeeName: string;
+    lastScanType: "in" | "out";
+  }
   | {
-      success: false;
-      message: string;
-    };
+    success: false;
+    message: string;
+  };
 
 export async function scanEmployee(empCode: string): Promise<ScanResult> {
   try {
@@ -31,11 +31,11 @@ export async function scanEmployee(empCode: string): Promise<ScanResult> {
       };
     }
 
-    // 2️⃣ Perform scan (in/out auto logic)
+    // 2️⃣ Perform scan (in/out auto logic — may throw access denied)
     const result = await scanEmployeeCore({ empCode });
 
     return {
-      success: true, // ✅ REQUIRED
+      success: true,
       empCode: employee.empCode,
       employeeName: employee.name,
       lastScanType: result.lastScanType,
@@ -43,10 +43,10 @@ export async function scanEmployee(empCode: string): Promise<ScanResult> {
   } catch (err: any) {
     console.error("❌ Error scanning employee:", err);
 
-    // ❌ System / unexpected error (NO throw)
+    // Surface the real error message (access denied, dept mismatch, etc.)
     return {
       success: false,
-      message: "Something went wrong while scanning employee",
+      message: err?.message ?? "Something went wrong while scanning employee",
     };
   }
 }

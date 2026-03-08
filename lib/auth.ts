@@ -16,6 +16,8 @@ export async function getUserFromToken(token: string) {
       id: payload.id as string,
       role: payload.role as "admin" | "supervisor",
       departmentId: (payload.departmentId as string) || null,
+      accessedDepartments: (payload.accessedDepartments as string[]) || [],
+      isSuperAdmin: (payload.isSuperAdmin as boolean) || false,
     };
   } catch (error) {
     console.error("❌ Invalid token:", error);

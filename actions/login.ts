@@ -15,6 +15,8 @@ type LoginResponse =
       username: string;
       role: "admin" | "supervisor" | "user";
       departmentId: string | null;
+      accessedDepartments: string[];
+      isSuperAdmin: boolean;
     };
   };
 
@@ -54,6 +56,10 @@ export async function loginUser(
       role: user.role,
       departmentId:
         user.role === "supervisor" ? user.departmentId : null,
+      accessedDepartments:
+        user.role === "supervisor" ? user.accessedDepartments : [],
+      isSuperAdmin:
+        user.role === "supervisor" ? user.isSuperAdmin : false,
     },
     process.env.JWT_SECRET!,
     { expiresIn: "7d" }
@@ -74,9 +80,11 @@ export async function loginUser(
     message: "Login successful",
     user: {
       id: user.id,
-      username: user.username, // already lowercase in DB
+      username: user.username,
       role: user.role,
       departmentId: user.departmentId,
+      accessedDepartments: user.accessedDepartments,
+      isSuperAdmin: user.isSuperAdmin,
     },
   };
 }
