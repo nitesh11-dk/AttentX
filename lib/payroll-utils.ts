@@ -89,3 +89,36 @@ export function sumDeductions(deductions?: any) {
         0
     );
 }
+
+/**
+ * Finds the correct cycle start and end dates for a specific Salary Month & Year
+ * by checking cycles starting in the requested month, the previous month, and next month.
+ */
+export function getCycleForSalaryMonth(
+    year: number,
+    month: number, // 1-12
+    timing: { startDay: number; endDay: number; span: "SAME_MONTH" | "NEXT_MONTH" }
+) {
+    // 1️⃣ Try cycle starting in the requested month
+    const ref1 = new Date(year, month - 1, 15);
+    const info1 = getSalaryMonthInfo(ref1, timing);
+    if (info1.salaryMonth === month && info1.salaryYear === year) {
+        return info1;
+    }
+
+    // 2️⃣ Try cycle starting in the previous month (for cross-month cycles like 26th-25th)
+    const ref2 = new Date(year, month - 2, 15);
+    const info2 = getSalaryMonthInfo(ref2, timing);
+    if (info2.salaryMonth === month && info2.salaryYear === year) {
+        return info2;
+    }
+
+    // 3️⃣ Try cycle starting in the next month (edge cases)
+    const ref3 = new Date(year, month, 15);
+    const info3 = getSalaryMonthInfo(ref3, timing);
+    if (info3.salaryMonth === month && info3.salaryYear === year) {
+        return info3;
+    }
+
+    return null; // Should never happen with valid configs
+}

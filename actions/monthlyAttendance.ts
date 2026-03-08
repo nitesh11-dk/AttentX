@@ -7,7 +7,8 @@ import {
   resolveCycleDates,
   getEffectiveEnd,
   sumDeductions,
-  getSalaryMonthInfo
+  getSalaryMonthInfo,
+  getCycleForSalaryMonth
 } from "@/lib/payroll-utils";
 import { calculateSalaryComponents } from "@/lib/payroll-core";
 
@@ -36,17 +37,19 @@ export async function getEmployeesWithMonthlySummary(input: {
 
   // 2️⃣ Resolve valid cycle periods for this (Year, Month)
   // Only keep cycles where this month is the official Salary Month
-  const referenceDate = new Date(year, month - 1, 15);
   const validCycles = cyclesToProcess
     .map((c: any) => {
-      const info = getSalaryMonthInfo(referenceDate, {
+      const info = getCycleForSalaryMonth(year, month, {
         startDay: c.startDay,
         endDay: c.endDay,
         span: c.span as any,
       });
-      return { ...info, cycleTimingId: c.id };
+      if (info) {
+        return { ...info, cycleTimingId: c.id };
+      }
+      return null;
     })
-    .filter((info) => info.salaryMonth === month && info.salaryYear === year);
+    .filter(Boolean) as any[];
 
   if (validCycles.length === 0) {
     return [];
@@ -160,17 +163,16 @@ async function calculateOneEmployee({
   })) as any;
   if (!cycle) throw new Error("Cycle not found");
 
-  // Determine Salary Month based on reference
-  const referenceDate = new Date(year, month - 1, 15);
-  const info = getSalaryMonthInfo(referenceDate, {
+  // Determine Salary Month based on requested year/month
+  const info = getCycleForSalaryMonth(year, month, {
     startDay: cycle.startDay,
     endDay: cycle.endDay,
     span: cycle.span as any,
   });
 
   // Rule 5: Selected month represents SALARY MONTH
-  if (info.salaryMonth !== month || info.salaryYear !== year) {
-    return null; // Do not calculate if it belongs to another month
+  if (!info) {
+    return null; // Do not calculate if no valid cycle mapping exists
   }
 
   const { cycleStart, cycleEnd, daysInSalaryMonth } = info;
