@@ -156,6 +156,7 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, e
         setAddForm({
             time: "09:00",
             scanType: "in",
+            departmentId: firstSv?.accessedDepartments?.[0] || employeeDepartmentId || "",
             supervisorId: firstSv?.id || "",
         });
     };
