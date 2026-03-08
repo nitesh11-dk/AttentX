@@ -89,23 +89,42 @@ function AttendanceRow({ rec, index }: { rec: DailyEmployeeRecord; index: number
                 </span>
             </td>
 
-            {/* Supervisor + Department (CROSS-DEPARTMENT INDICATOR) */}
-            <td className="hidden lg:table-cell px-4 py-3 text-sm whitespace-nowrap">
-                {rec.supervisorName ? (
-                    <div className="flex flex-col gap-1">
+            {/* IN Supervisor */}
+            <td className="hidden lg:table-cell px-3 md:px-4 py-3 text-sm whitespace-nowrap">
+                {rec.supervisorInName ? (
+                    <div className="flex flex-col">
                         <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-slate-700">{rec.supervisorInName}</span>
                             {rec.isCrossDepartment && (
-                                <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 border border-red-300 rounded-full px-2 py-0.5 text-xs font-bold animate-pulse">
-                                    ⚠️ CROSS-DEPT
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 border border-red-200" title="Supervisor department differs from employee">
+                                    ⚠️ CROSS
                                 </span>
                             )}
-                            <span className="text-sm font-medium text-slate-700">{rec.supervisorName}</span>
                         </div>
-                        <span className="text-xs text-slate-500">{rec.supervisorDepartmentName || "—"}</span>
+                        <span className="text-xs text-slate-500">{rec.supervisorInDepartmentName || "—"}</span>
                     </div>
                 ) : (
                     <span className="text-slate-300">—</span>
                 )}
+            </td>
+
+            {/* OUT Supervisor */}
+            <td className="hidden lg:table-cell px-3 md:px-4 py-3 text-sm whitespace-nowrap">
+                {rec.isPresent && !rec.isStillIn && (
+                    <div className="flex flex-col">
+                        {rec.wasAutoClosed ? (
+                            <span className="text-xs font-semibold text-orange-500 italic mt-0.5">Auto Closed</span>
+                        ) : rec.supervisorOutName ? (
+                            <div className="flex flex-col">
+                                <span className="text-sm font-medium text-slate-700">{rec.supervisorOutName}</span>
+                                <span className="text-xs text-slate-500">{rec.supervisorOutDepartmentName || "—"}</span>
+                            </div>
+                        ) : (
+                            <span className="text-slate-300">—</span>
+                        )}
+                    </div>
+                )}
+                {rec.isStillIn && <span className="text-slate-300">—</span>}
             </td>
 
             {/* Status */}
@@ -206,10 +225,11 @@ export default function AttendancePage() {
         // Department filter (should match returned summary)
         const matchesDept = selectedDept === "all" || r.departmentId === selectedDept;
 
-        // Supervisor filter - ensure we only filter if supervisor is selected and supervisorId exists
+        // Supervisor filter - include if either IN or OUT supervisor matches
         const matchesSupervisor =
             selectedSupervisor === "all" ||
-            (r.supervisorId && r.supervisorId === selectedSupervisor);
+            ((r.supervisorInId && r.supervisorInId === selectedSupervisor) ||
+                (r.supervisorOutId && r.supervisorOutId === selectedSupervisor));
 
         // Search by name or employee code (case-insensitive)
         const searchLower = search.toLowerCase().trim();
@@ -227,12 +247,20 @@ export default function AttendancePage() {
         return matchesDept && matchesSupervisor && matchesSearch && matchesStatus;
     });
 
-    // Get unique supervisors from records
+    // Get unique supervisors from records for the dropdown filters
+    // We list all supervisors who did an IN or OUT scan
     const uniqueSupervisors = Array.from(
         new Map(
-            (summary?.records ?? [])
-                .filter((r) => r.supervisorId && r.supervisorName)
-                .map((r) => [r.supervisorId, { id: r.supervisorId, name: r.supervisorName }])
+            (summary?.records ?? []).flatMap((r) => {
+                const sups: { id: string; name: string }[] = [];
+                if (r.supervisorInId && r.supervisorInName) {
+                    sups.push({ id: r.supervisorInId, name: r.supervisorInName });
+                }
+                if (r.supervisorOutId && r.supervisorOutName) {
+                    sups.push({ id: r.supervisorOutId, name: r.supervisorOutName });
+                }
+                return sups;
+            }).map((sup) => [sup.id, { id: sup.id, name: sup.name }])
         ).values()
     );
 
@@ -537,7 +565,8 @@ export default function AttendancePage() {
                                         <th className="sticky left-0 z-10 bg-slate-50 px-3 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider w-10 border-r border-slate-200">#</th>
                                         <th className="px-3 md:px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Employee</th>
                                         <th className="hidden md:table-cell px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Emp Dept</th>
-                                        <th className="hidden lg:table-cell px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Supervisor (Scan Dept)</th>
+                                        <th className="hidden lg:table-cell px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">IN Supervisor</th>
+                                        <th className="hidden lg:table-cell px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">OUT Supervisor</th>
                                         <th className="px-3 md:px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Status</th>
                                         <th className="hidden sm:table-cell px-3 md:px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">First In</th>
                                         <th className="hidden sm:table-cell px-3 md:px-4 py-3 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Last Out</th>

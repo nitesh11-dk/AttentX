@@ -8,11 +8,18 @@ export interface DailyEmployeeRecord {
     name: string;
     departmentId: string;
     departmentName: string;
-    supervisorId: string | null; // Who scanned the attendance
-    supervisorName: string | null;
-    supervisorDepartmentId: string | null; // Which dept the supervisor belongs to
-    supervisorDepartmentName: string | null;
-    isCrossDepartment: boolean; // Red flag: supervisor dept ≠ employee dept
+    // IN Details
+    supervisorInId: string | null;
+    supervisorInName: string | null;
+    supervisorInDepartmentId: string | null;
+    supervisorInDepartmentName: string | null;
+    // OUT Details
+    supervisorOutId: string | null;
+    supervisorOutName: string | null;
+    supervisorOutDepartmentId: string | null;
+    supervisorOutDepartmentName: string | null;
+
+    isCrossDepartment: boolean; // Red flag: supervisor In dept ≠ employee dept
     isPresent: boolean;
     isStillIn: boolean;
     wasAutoClosed: boolean; // Add to track final auto-closed status
@@ -89,15 +96,15 @@ export async function getDailyAttendanceSummary(
         const entries = emp.attendanceWallet?.entries ?? [];
         const isPresent = entries.length > 0;
 
-        // Get supervisor info from first entry (who initiated the scan)
-        const firstEntry = entries[0];
-        const supervisorId = firstEntry?.scannedBy ?? null;
-        const supervisorName = (firstEntry?.user as any)?.username ?? null;
-        const supervisorDepartmentId = (firstEntry?.user as any)?.departmentId ?? null;
-        const supervisorDepartmentName = (firstEntry?.user as any)?.department?.name ?? null;
+        // Get supervisor IN info from first IN entry of the day
+        const firstInEntry = entries.find(e => e.scanType === "in");
+        const supervisorInId = firstInEntry?.scannedBy ?? null;
+        const supervisorInName = (firstInEntry?.user as any)?.username ?? null;
+        const supervisorInDepartmentId = (firstInEntry?.user as any)?.departmentId ?? null;
+        const supervisorInDepartmentName = (firstInEntry?.user as any)?.department?.name ?? null;
 
-        // Check if cross-department (supervisor's dept ≠ employee's dept)
-        const isCrossDepartment = isPresent && supervisorDepartmentId && supervisorDepartmentId !== emp.departmentId;
+        // Check if cross-department (supervisorIn dept ≠ employee's dept)
+        const isCrossDepartment = isPresent && supervisorInDepartmentId && supervisorInDepartmentId !== emp.departmentId;
 
         // Calculate hours worked using IN/OUT pairs
         let totalMinutes = 0;
@@ -105,6 +112,11 @@ export async function getDailyAttendanceSummary(
         let firstIn: Date | null = null;
         let lastOut: Date | null = null;
         let wasAutoClosed = false;
+
+        let supervisorOutId: string | null = null;
+        let supervisorOutName: string | null = null;
+        let supervisorOutDepartmentId: string | null = null;
+        let supervisorOutDepartmentName: string | null = null;
 
         for (const entry of entries) {
             if (entry.scanType === "in") {
@@ -119,9 +131,20 @@ export async function getDailyAttendanceSummary(
                         totalMinutes += Math.round(durationMs / 60000);
                     }
                     lastOut = entry.timestamp;
+
+                    // Capture OUT supervisor details, overriding any previous ones for the final OUT
+                    supervisorOutId = entry.scannedBy ?? null;
+                    supervisorOutName = (entry.user as any)?.username ?? null;
+                    supervisorOutDepartmentId = (entry.user as any)?.departmentId ?? null;
+                    supervisorOutDepartmentName = (entry.user as any)?.department?.name ?? null;
+
                 } else {
                     // if it was auto closed, we should clear the lastOut from previous shifts so we show AUTO CLOSED only!
                     lastOut = null;
+                    supervisorOutId = null;
+                    supervisorOutName = null;
+                    supervisorOutDepartmentId = null;
+                    supervisorOutDepartmentName = null;
                 }
                 lastIn = null;
             }
@@ -153,10 +176,14 @@ export async function getDailyAttendanceSummary(
             name: emp.name,
             departmentId: emp.departmentId,
             departmentName: emp.department?.name ?? "Unknown",
-            supervisorId,
-            supervisorName,
-            supervisorDepartmentId,
-            supervisorDepartmentName,
+            supervisorInId,
+            supervisorInName,
+            supervisorInDepartmentId,
+            supervisorInDepartmentName,
+            supervisorOutId,
+            supervisorOutName,
+            supervisorOutDepartmentId,
+            supervisorOutDepartmentName,
             isCrossDepartment,
             isPresent,
             isStillIn,
