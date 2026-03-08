@@ -10,8 +10,13 @@ interface PayrollInput {
     pfActive: boolean;
     pfAmountPerDay: number | null;
     esicActive: boolean;
-    // Note: esicAmountPerDay is not in the model yet, adding for future compatibility
-    esicAmountPerDay?: number | null;
+    esicAmountPerDay: number | null;
+    ptActive: boolean;
+    ptAmountPerDay: number | null;
+    wbcActive: boolean;
+    wbcAmountPerDay: number | null;
+    mlwfActive: boolean;
+    mlwfAmountPerDay: number | null;
 }
 
 /**
@@ -29,6 +34,13 @@ export function calculateSalaryComponents(input: PayrollInput) {
         pfActive,
         pfAmountPerDay,
         esicActive,
+        esicAmountPerDay,
+        ptActive,
+        ptAmountPerDay,
+        wbcActive,
+        wbcAmountPerDay,
+        mlwfActive,
+        mlwfAmountPerDay,
     } = input;
 
     // 1. Calculate Gross Salary (Regular Hours + Overtime)
@@ -37,23 +49,32 @@ export function calculateSalaryComponents(input: PayrollInput) {
     const grossSalary = Math.round(combinedHours * hourlyRate * 100) / 100;
 
     // 2. PF Deduction
-    // Only if pfActive is true and amount is set
     const pfDeduction = (pfActive && pfAmountPerDay)
         ? Math.round(pfAmountPerDay * daysPresent * 100) / 100
         : 0;
+
+    // 2.5 Other Daily Deductions
+    const esicDeduction = (esicActive && esicAmountPerDay) ? Math.round(esicAmountPerDay * daysPresent * 100) / 100 : 0;
+    const ptDeduction = (ptActive && ptAmountPerDay) ? Math.round(ptAmountPerDay * daysPresent * 100) / 100 : 0;
+    const wbcDeduction = (wbcActive && wbcAmountPerDay) ? Math.round(wbcAmountPerDay * daysPresent * 100) / 100 : 0;
+    const mlwfDeduction = (mlwfActive && mlwfAmountPerDay) ? Math.round(mlwfAmountPerDay * daysPresent * 100) / 100 : 0;
 
     // 3. Other Deductions (JSON from modal)
     const otherDeductions = sumDeductions(deductions);
 
     // 4. Net Salary Calculation
-    // Formula: Gross - Advance - Other Deductions - PF
+    // Formula: Gross - Advance - Other Deductions - PF - ESIC - PT - WBC - MLWF
     const netSalary = Math.round(
-        (grossSalary - advanceAmount - otherDeductions - pfDeduction) * 100
+        (grossSalary - advanceAmount - otherDeductions - pfDeduction - esicDeduction - ptDeduction - wbcDeduction - mlwfDeduction) * 100
     ) / 100;
 
     return {
         grossSalary,
         pfDeduction,
+        esicDeduction,
+        ptDeduction,
+        wbcDeduction,
+        mlwfDeduction,
         otherDeductions,
         netSalary,
         combinedHours,

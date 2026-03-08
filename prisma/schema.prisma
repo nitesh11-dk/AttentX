@@ -64,6 +64,16 @@ model Employee {
   pfActive          Boolean                    @default(true)
   joinedAt          DateTime
   pfAmountPerDay    Float?                     @default(0)
+  esicAmountPerDay  Float?                     @default(0)
+  ptId              String?                    @unique
+  ptActive          Boolean                    @default(true)
+  ptAmountPerDay    Float?                     @default(0)
+  wbcId             String?                    @unique
+  wbcActive         Boolean                    @default(true)
+  wbcAmountPerDay   Float?                     @default(0)
+  mlwfId            String?                    @unique
+  mlwfActive        Boolean                    @default(true)
+  mlwfAmountPerDay  Float?                     @default(0)
   attendanceWallet  AttendanceWallet?
   cycleTiming       CycleTiming?               @relation(fields: [cycleTimingId], references: [id])
   department        Department                 @relation(fields: [departmentId], references: [id])

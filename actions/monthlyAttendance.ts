@@ -258,6 +258,13 @@ async function calculateOneEmployee({
     pfActive: employee.pfActive,
     pfAmountPerDay: employee.pfAmountPerDay,
     esicActive: employee.esicActive,
+    esicAmountPerDay: employee.esicAmountPerDay,
+    ptActive: employee.ptActive,
+    ptAmountPerDay: employee.ptAmountPerDay,
+    wbcActive: employee.wbcActive,
+    wbcAmountPerDay: employee.wbcAmountPerDay,
+    mlwfActive: employee.mlwfActive,
+    mlwfAmountPerDay: employee.mlwfAmountPerDay,
   });
 
   return prisma.monthlyAttendanceSummary.upsert({

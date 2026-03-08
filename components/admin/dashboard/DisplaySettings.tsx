@@ -38,6 +38,35 @@ export function DisplaySettings({
                 </Button>
             </CardHeader>
             <CardContent className="py-4 px-6">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b border-indigo-50">
+                    <span className="text-xs font-medium text-slate-500">Select columns to display</span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                            onClick={() => {
+                                const allKeys = Object.keys(columnVisibility);
+                                const newVisibility = allKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {});
+                                setColumnVisibility(newVisibility);
+                            }}
+                        >
+                            Select All
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                            onClick={() => {
+                                const allKeys = Object.keys(columnVisibility);
+                                const newVisibility = allKeys.reduce((acc, key) => ({ ...acc, [key]: false }), {});
+                                setColumnVisibility(newVisibility);
+                            }}
+                        >
+                            Clear All
+                        </Button>
+                    </div>
+                </div>
                 <div className="flex flex-wrap gap-x-8 gap-y-3">
                     {Object.entries(columnVisibility)
                         .map(([key, val]) => (

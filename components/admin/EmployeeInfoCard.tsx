@@ -85,7 +85,7 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
     <div className="space-y-6">
       {/* Header with Employee Code and Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        
+
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -153,10 +153,9 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
               <strong>Shift:</strong>{" "}
               {shiftType
                 ? `${shiftType.name} (${formatTime(
-                    shiftType.startTime
-                  )} - ${formatTime(shiftType.endTime)}, ${
-                    shiftType.totalHours
-                  } hrs)`
+                  shiftType.startTime
+                )} - ${formatTime(shiftType.endTime)}, ${shiftType.totalHours
+                } hrs)`
                 : "N/A"}
             </p>
             <p>
@@ -169,35 +168,51 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
           </CardContent>
         </Card>
 
-        {/* PF & ESIC Information */}
+        {/* Payroll Deductions Information */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">PF & ESIC Information</CardTitle>
+            <CardTitle className="text-lg">Payroll Deductions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
               <strong>PF ID:</strong> {employee.pfId || "N/A"}{" "}
-              <span
-                className={`text-xs ml-2 ${
-                  employee.pfActive ? "text-green-600" : "text-red-600"
-                }`}
-              >
+              <span className={`text-xs ml-2 ${employee.pfActive ? "text-green-600" : "text-red-600"}`}>
                 ({employee.pfActive ? "Active" : "Inactive"})
               </span>
             </p>
-            <p>
-              <strong>PF Amount Per Day:</strong> ₹{employee.pfAmountPerDay || 0}
-            </p>
-            <p>
+            <p><strong>PF Amount/Day:</strong> ₹{employee.pfAmountPerDay || 0}</p>
+
+            <p className="border-t pt-2 mt-2">
               <strong>ESIC ID:</strong> {employee.esicId || "N/A"}{" "}
-              <span
-                className={`text-xs ml-2 ${
-                  employee.esicActive ? "text-green-600" : "text-red-600"
-                }`}
-              >
+              <span className={`text-xs ml-2 ${employee.esicActive ? "text-green-600" : "text-red-600"}`}>
                 ({employee.esicActive ? "Active" : "Inactive"})
               </span>
             </p>
+            <p><strong>ESIC Amount/Day:</strong> ₹{employee.esicAmountPerDay || 0}</p>
+
+            <p className="border-t pt-2 mt-2">
+              <strong>PT ID:</strong> {employee.ptId || "N/A"}{" "}
+              <span className={`text-xs ml-2 ${employee.ptActive ? "text-green-600" : "text-red-600"}`}>
+                ({employee.ptActive ? "Active" : "Inactive"})
+              </span>
+            </p>
+            <p><strong>PT Amount/Day:</strong> ₹{employee.ptAmountPerDay || 0}</p>
+
+            <p className="border-t pt-2 mt-2">
+              <strong>WBC ID:</strong> {employee.wbcId || "N/A"}{" "}
+              <span className={`text-xs ml-2 ${employee.wbcActive ? "text-green-600" : "text-red-600"}`}>
+                ({employee.wbcActive ? "Active" : "Inactive"})
+              </span>
+            </p>
+            <p><strong>WBC Amount/Day:</strong> ₹{employee.wbcAmountPerDay || 0}</p>
+
+            <p className="border-t pt-2 mt-2">
+              <strong>MLWF ID:</strong> {employee.mlwfId || "N/A"}{" "}
+              <span className={`text-xs ml-2 ${employee.mlwfActive ? "text-green-600" : "text-red-600"}`}>
+                ({employee.mlwfActive ? "Active" : "Inactive"})
+              </span>
+            </p>
+            <p><strong>MLWF Amount/Day:</strong> ₹{employee.mlwfAmountPerDay || 0}</p>
           </CardContent>
         </Card>
 

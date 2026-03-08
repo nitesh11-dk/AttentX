@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Download } from "lucide-react";
@@ -52,6 +53,19 @@ const employeeSchema = z.object({
 
   esicId: z.string().nullable(),
   esicActive: z.boolean().optional(),
+  esicAmountPerDay: z.number().min(0, "ESIC amount cannot be negative"),
+
+  ptId: z.string().nullable(),
+  ptActive: z.boolean().optional(),
+  ptAmountPerDay: z.number().min(0, "PT amount cannot be negative"),
+
+  wbcId: z.string().nullable(),
+  wbcActive: z.boolean().optional(),
+  wbcAmountPerDay: z.number().min(0, "WBC amount cannot be negative"),
+
+  mlwfId: z.string().nullable(),
+  mlwfActive: z.boolean().optional(),
+  mlwfAmountPerDay: z.number().min(0, "MLWF amount cannot be negative"),
 
   panNumber: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "PAN must be in format AAAAA9999A").nullable(),
 
@@ -106,6 +120,16 @@ export default function AddEmployeePage() {
       pfAmountPerDay: 0,
       esicId: null,
       esicActive: true,
+      esicAmountPerDay: 0,
+      ptId: null,
+      ptActive: true,
+      ptAmountPerDay: 0,
+      wbcId: null,
+      wbcActive: true,
+      wbcAmountPerDay: 0,
+      mlwfId: null,
+      mlwfActive: true,
+      mlwfAmountPerDay: 0,
       panNumber: null,
 
       dob: null,
@@ -208,10 +232,6 @@ export default function AddEmployeePage() {
                 <Input {...register("name")} placeholder="Full name" />
               </InputBlock>
 
-              <InputBlock label="Aadhaar Number *" error={errors.aadhaarNumber?.message}>
-                <Input {...register("aadhaarNumber")} maxLength={12} placeholder="12-digit number" />
-              </InputBlock>
-
               <InputBlock label="Mobile Number *" error={errors.mobile?.message}>
                 <Input {...register("mobile")} maxLength={10} placeholder="10-digit number" />
               </InputBlock>
@@ -251,13 +271,9 @@ export default function AddEmployeePage() {
             </div>
 
             {/* PAY INFO */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <InputBlock label="Hourly Rate *" error={errors.hourlyRate?.message}>
                 <Input type="number" step="0.01" {...register("hourlyRate", { valueAsNumber: true })} placeholder="Rate per hour" />
-              </InputBlock>
-
-              <InputBlock label="PF Amount Per Day" error={errors.pfAmountPerDay?.message}>
-                <Input type="number" step="0.01" {...register("pfAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
               </InputBlock>
             </div>
 
@@ -278,18 +294,132 @@ export default function AddEmployeePage() {
             </InputBlock>
 
             {/* IDENTIFICATION */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <InputBlock label="PF ID">
-                <Input {...register("pfId")} placeholder="Provident Fund ID" />
-              </InputBlock>
-
-              <InputBlock label="ESIC ID">
-                <Input {...register("esicId")} placeholder="Employee State Insurance ID" />
-              </InputBlock>
-
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputBlock label="PAN Number" error={errors.panNumber?.message}>
                 <Input {...register("panNumber")} placeholder="AAAAA9999A" maxLength={10} />
               </InputBlock>
+
+              <InputBlock label="Aadhaar Number *" error={errors.aadhaarNumber?.message}>
+                <Input {...register("aadhaarNumber")} maxLength={12} placeholder="12-digit number" />
+              </InputBlock>
+            </div>
+
+            {/* PAYROLL DEDUCTIONS */}
+            <div className="space-y-4 border rounded-xl p-4 bg-slate-50">
+              <h3 className="text-sm font-bold text-slate-700 pb-2 border-b">Payroll Deductions</h3>
+
+              <div className="space-y-6">
+                {/* PF */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                  <div className="pb-2">
+                    <Controller
+                      name="pfActive"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Switch id="pfActive" checked={field.value} onCheckedChange={field.onChange} />
+                          <Label htmlFor="pfActive" className="font-semibold text-slate-700">PF Active</Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <InputBlock label="PF ID" error={errors.pfId?.message}>
+                    <Input {...register("pfId")} placeholder="Provident Fund ID" />
+                  </InputBlock>
+                  <InputBlock label="PF Amount/Day (₹)" error={errors.pfAmountPerDay?.message}>
+                    <Input type="number" step="0.01" {...register("pfAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
+                  </InputBlock>
+                </div>
+
+                {/* ESIC */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                  <div className="pb-2">
+                    <Controller
+                      name="esicActive"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Switch id="esicActive" checked={field.value} onCheckedChange={field.onChange} />
+                          <Label htmlFor="esicActive" className="font-semibold text-slate-700">ESIC Active</Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <InputBlock label="ESIC ID" error={errors.esicId?.message}>
+                    <Input {...register("esicId")} placeholder="ESIC ID" />
+                  </InputBlock>
+                  <InputBlock label="ESIC Amount/Day (₹)" error={errors.esicAmountPerDay?.message}>
+                    <Input type="number" step="0.01" {...register("esicAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
+                  </InputBlock>
+                </div>
+
+                {/* PT */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                  <div className="pb-2">
+                    <Controller
+                      name="ptActive"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Switch id="ptActive" checked={field.value} onCheckedChange={field.onChange} />
+                          <Label htmlFor="ptActive" className="font-semibold text-slate-700">PT Active</Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <InputBlock label="PT ID" error={errors.ptId?.message}>
+                    <Input {...register("ptId")} placeholder="Professional Tax ID" />
+                  </InputBlock>
+                  <InputBlock label="PT Amount/Day (₹)" error={errors.ptAmountPerDay?.message}>
+                    <Input type="number" step="0.01" {...register("ptAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
+                  </InputBlock>
+                </div>
+
+                {/* WBC */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                  <div className="pb-2">
+                    <Controller
+                      name="wbcActive"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Switch id="wbcActive" checked={field.value} onCheckedChange={field.onChange} />
+                          <Label htmlFor="wbcActive" className="font-semibold text-slate-700">WBC Active</Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <InputBlock label="WBC ID" error={errors.wbcId?.message}>
+                    <Input {...register("wbcId")} placeholder="WBC ID" />
+                  </InputBlock>
+                  <InputBlock label="WBC Amount/Day (₹)" error={errors.wbcAmountPerDay?.message}>
+                    <Input type="number" step="0.01" {...register("wbcAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
+                  </InputBlock>
+                </div>
+
+                {/* MLWF */}
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                  <div className="pb-2">
+                    <Controller
+                      name="mlwfActive"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="flex items-center space-x-2">
+                          <Switch id="mlwfActive" checked={field.value} onCheckedChange={field.onChange} />
+                          <Label htmlFor="mlwfActive" className="font-semibold text-slate-700">MLWF Active</Label>
+                        </div>
+                      )}
+                    />
+                  </div>
+                  <InputBlock label="MLWF ID" error={errors.mlwfId?.message}>
+                    <Input {...register("mlwfId")} placeholder="MLWF ID" />
+                  </InputBlock>
+                  <InputBlock label="MLWF Amount/Day (₹)" error={errors.mlwfAmountPerDay?.message}>
+                    <Input type="number" step="0.01" {...register("mlwfAmountPerDay", { valueAsNumber: true })} placeholder="0.00" />
+                  </InputBlock>
+                </div>
+
+              </div>
             </div>
 
             {/* BANK DETAILS */}

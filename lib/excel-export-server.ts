@@ -34,13 +34,13 @@ function formatDateReadable(date: Date | null | undefined): string {
  */
 function formatDeductions(deductions: any): string {
   if (!deductions || typeof deductions !== "object") return "-";
-  
+
   const lines = Object.entries(deductions)
     .map(([key, value]) => {
       const displayKey = key.charAt(0).toUpperCase() + key.slice(1);
       return `${displayKey}: ${value}`;
     });
-  
+
   return lines.length > 0 ? lines.join("\n") : "-";
 }
 
@@ -80,7 +80,7 @@ export async function exportToExcelServer({
   // === HEADER SETUP ===
   // Count total visible columns (mandatory + optional)
   const visibleColCount = Object.values(columnVisibility).filter(Boolean).length + 2; // +2 for mandatory name and empCode
-  
+
   const titleMergeEndCol = getColumnLetter(visibleColCount);
   worksheet.mergeCells(`A1:${titleMergeEndCol}1`);
   const titleCell = worksheet.getCell("A1");
@@ -126,6 +126,13 @@ export async function exportToExcelServer({
     pfId: "PF ID",
     pfPerDay: "PF/Day",
     esicId: "ESIC ID",
+    esicPerDay: "ESIC/Day",
+    ptId: "PT ID",
+    ptPerDay: "PT/Day",
+    wbcId: "WBC ID",
+    wbcPerDay: "WBC/Day",
+    mlwfId: "MLWF ID",
+    mlwfPerDay: "MLWF/Day",
     aadhaar: "Aadhaar",
     bankAccount: "Bank Account",
     ifscCode: "IFSC Code",
@@ -197,7 +204,7 @@ export async function exportToExcelServer({
     const setCell = (colKey: string, value: any, numericValue?: number) => {
       if (columnMapping[colKey] === undefined) return;
       const cell = worksheet.getCell(excelRowNum, columnMapping[colKey]);
-      
+
       if (numericValue !== undefined) {
         cell.value = numericValue;
         cell.numFmt = typeof value === "number" ? "0.00" : "General";
@@ -217,17 +224,24 @@ export async function exportToExcelServer({
     if (columnVisibility.pfId) setCell("pfId", employee.pfId || "-");
     if (columnVisibility.pfPerDay) setCell("pfPerDay", employee.pfAmountPerDay || "-", employee.pfAmountPerDay || 0);
     if (columnVisibility.esicId) setCell("esicId", employee.esicId || "-");
+    if (columnVisibility.esicPerDay) setCell("esicPerDay", employee.esicAmountPerDay || "-", employee.esicAmountPerDay || 0);
+    if (columnVisibility.ptId) setCell("ptId", employee.ptId || "-");
+    if (columnVisibility.ptPerDay) setCell("ptPerDay", employee.ptAmountPerDay || "-", employee.ptAmountPerDay || 0);
+    if (columnVisibility.wbcId) setCell("wbcId", employee.wbcId || "-");
+    if (columnVisibility.wbcPerDay) setCell("wbcPerDay", employee.wbcAmountPerDay || "-", employee.wbcAmountPerDay || 0);
+    if (columnVisibility.mlwfId) setCell("mlwfId", employee.mlwfId || "-");
+    if (columnVisibility.mlwfPerDay) setCell("mlwfPerDay", employee.mlwfAmountPerDay || "-", employee.mlwfAmountPerDay || 0);
     if (columnVisibility.aadhaar) setCell("aadhaar", employee.aadhaarNumber ? `****${employee.aadhaarNumber.slice(-4)}` : "-");
     if (columnVisibility.bankAccount) setCell("bankAccount", employee.bankAccountNumber || "-");
     if (columnVisibility.ifscCode) setCell("ifscCode", employee.ifscCode || "-");
     if (columnVisibility.panNumber) setCell("panNumber", employee.panNumber || "-");
-    
+
     // Cycle column with detailed info
     if (columnVisibility.cycle) setCell("cycle", cycleName);
-    
+
     // Till Date column (new)
     if (columnVisibility.tillDate) setCell("tillDate", getTillDateRange());
-    
+
     if (columnVisibility.present) setCell("present", summary?.daysPresent || 0, summary?.daysPresent || 0);
     if (columnVisibility.absent) setCell("absent", summary?.daysAbsent || 0, summary?.daysAbsent || 0);
     if (columnVisibility.totalHrs) setCell("totalHrs", summary?.totalHours || 0, summary?.totalHours || 0);
@@ -236,7 +250,7 @@ export async function exportToExcelServer({
     if (columnVisibility.joinedAt) setCell("joinedAt", formatDateReadable(employee.joinedAt));
     if (columnVisibility.advance) setCell("advance", summary?.advanceAmount || 0, summary?.advanceAmount || 0);
     if (columnVisibility.deductions) setCell("deductions", formatDeductions(summary?.deductions));
-    
+
     // PF Active Status - ALWAYS EXPORT
     const pfActiveCol = columnMapping["pfActive"];
     if (pfActiveCol) {
@@ -287,6 +301,13 @@ export async function exportToExcelServer({
           pfActive: employee.pfActive || false,
           pfAmountPerDay: employee.pfAmountPerDay || null,
           esicActive: employee.esicActive || false,
+          esicAmountPerDay: employee.esicAmountPerDay || null,
+          ptActive: employee.ptActive || false,
+          ptAmountPerDay: employee.ptAmountPerDay || null,
+          wbcActive: employee.wbcActive || false,
+          wbcAmountPerDay: employee.wbcAmountPerDay || null,
+          mlwfActive: employee.mlwfActive || false,
+          mlwfAmountPerDay: employee.mlwfAmountPerDay || null,
         });
         const grossCell = worksheet.getCell(excelRowNum, columnMapping["grossSalary"]);
         grossCell.value = calc.grossSalary;
@@ -312,6 +333,13 @@ export async function exportToExcelServer({
           pfActive: employee.pfActive || false,
           pfAmountPerDay: employee.pfAmountPerDay || null,
           esicActive: employee.esicActive || false,
+          esicAmountPerDay: employee.esicAmountPerDay || null,
+          ptActive: employee.ptActive || false,
+          ptAmountPerDay: employee.ptAmountPerDay || null,
+          wbcActive: employee.wbcActive || false,
+          wbcAmountPerDay: employee.wbcAmountPerDay || null,
+          mlwfActive: employee.mlwfActive || false,
+          mlwfAmountPerDay: employee.mlwfAmountPerDay || null,
         });
         const pfDeductCell = worksheet.getCell(excelRowNum, columnMapping["pfDeduction"]);
         if (pfDeductCell) {
@@ -324,30 +352,43 @@ export async function exportToExcelServer({
       // Using payroll-core formula: Gross - Advance - Other Deductions - PF
       if (columnVisibility.netSalary) {
         const netCell = worksheet.getCell(excelRowNum, columnMapping["netSalary"]);
+        const calc = calculateSalaryComponents({
+          totalHours: summary.totalHours || 0,
+          hourlyRate: employee.hourlyRate || 0,
+          overtimeHours: summary.overtimeHours || 0,
+          advanceAmount: summary.advanceAmount || 0,
+          deductions: summary.deductions || {},
+          daysPresent: summary.daysPresent || 0,
+          pfActive: employee.pfActive || false,
+          pfAmountPerDay: employee.pfAmountPerDay || null,
+          esicActive: employee.esicActive || false,
+          esicAmountPerDay: employee.esicAmountPerDay || null,
+          ptActive: employee.ptActive || false,
+          ptAmountPerDay: employee.ptAmountPerDay || null,
+          wbcActive: employee.wbcActive || false,
+          wbcAmountPerDay: employee.wbcAmountPerDay || null,
+          mlwfActive: employee.mlwfActive || false,
+          mlwfAmountPerDay: employee.mlwfAmountPerDay || null,
+        });
+
         const grossSalaryColLetter = colLetters["grossSalary"];
         const pfDeductionColLetter = colLetters["pfDeduction"];
 
         if (grossSalaryColLetter && advanceColLetter && pfDeductionColLetter) {
-          // Formula: Gross - Advance - PF Deduction - Other Deductions
-          // Other deductions are embedded as a fixed value
+          // Formula: Gross - Advance - PF Deduction - Other Fixed Deductions - New Deductions
+          const esicEx = calc.esicDeduction;
+          const ptEx = calc.ptDeduction;
+          const wbcEx = calc.wbcDeduction;
+          const mlwfEx = calc.mlwfDeduction;
+          const totalOtherHardcoded = otherDeductionsAmount + esicEx + ptEx + wbcEx + mlwfEx;
+
           netCell.value = {
-            formula: `${grossSalaryColLetter}${excelRowStr}-${advanceColLetter}${excelRowStr}-${pfDeductionColLetter}${excelRowStr}-${otherDeductionsAmount}`,
+            formula: `${grossSalaryColLetter}${excelRowStr}-${advanceColLetter}${excelRowStr}-${pfDeductionColLetter}${excelRowStr}-${totalOtherHardcoded}`,
           };
           netCell.numFmt = "0.00";
         } else {
-          // Fallback to calculated value using payroll-core logic
-          const calc = calculateSalaryComponents({
-            totalHours: summary.totalHours || 0,
-            hourlyRate: employee.hourlyRate || 0,
-            overtimeHours: summary.overtimeHours || 0,
-            advanceAmount: summary.advanceAmount || 0,
-            deductions: summary.deductions || {},
-            daysPresent: summary.daysPresent || 0,
-            pfActive: employee.pfActive || false,
-            pfAmountPerDay: employee.pfAmountPerDay || null,
-            esicActive: employee.esicActive || false,
-          });
-          netCell.value = calc.netSalary;
+          const calcNetFallback = calc;
+          netCell.value = calcNetFallback.netSalary;
           netCell.numFmt = "0.00";
         }
       }
@@ -365,7 +406,7 @@ export async function exportToExcelServer({
 
   // === ROW HEIGHTS & STYLING ===
   worksheet.getRow(4).height = 28;
-  
+
   // Set data row heights and styling
   for (let rowNum = 5; rowNum <= 4 + rows.length; rowNum++) {
     const row = worksheet.getRow(rowNum);

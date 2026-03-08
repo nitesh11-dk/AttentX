@@ -47,6 +47,16 @@ export default function EditEmployeePage() {
         pfAmountPerDay: 0,
         esicId: "",
         esicActive: true,
+        esicAmountPerDay: 0,
+        ptId: "",
+        ptActive: true,
+        ptAmountPerDay: 0,
+        wbcId: "",
+        wbcActive: true,
+        wbcAmountPerDay: 0,
+        mlwfId: "",
+        mlwfActive: true,
+        mlwfAmountPerDay: 0,
         panNumber: "",
         dob: "",
         currentAddress: "",
@@ -89,6 +99,16 @@ export default function EditEmployeePage() {
                         pfAmountPerDay: emp.pfAmountPerDay || 0,
                         esicId: emp.esicId || "",
                         esicActive: emp.esicActive,
+                        esicAmountPerDay: emp.esicAmountPerDay || 0,
+                        ptId: emp.ptId || "",
+                        ptActive: emp.ptActive,
+                        ptAmountPerDay: emp.ptAmountPerDay || 0,
+                        wbcId: emp.wbcId || "",
+                        wbcActive: emp.wbcActive,
+                        wbcAmountPerDay: emp.wbcAmountPerDay || 0,
+                        mlwfId: emp.mlwfId || "",
+                        mlwfActive: emp.mlwfActive,
+                        mlwfAmountPerDay: emp.mlwfAmountPerDay || 0,
                         panNumber: emp.panNumber || "",
                         dob: emp.dob ? emp.dob.split("T")[0] : "",
                         currentAddress: emp.currentAddress || "",
@@ -166,6 +186,10 @@ export default function EditEmployeePage() {
                 ...formData,
                 hourlyRate: Number(formData.hourlyRate),
                 pfAmountPerDay: Number(formData.pfAmountPerDay),
+                esicAmountPerDay: Number(formData.esicAmountPerDay),
+                ptAmountPerDay: Number(formData.ptAmountPerDay),
+                wbcAmountPerDay: Number(formData.wbcAmountPerDay),
+                mlwfAmountPerDay: Number(formData.mlwfAmountPerDay),
                 dob: formData.dob ? new Date(formData.dob) : null,
                 shiftTypeId: formData.shiftTypeId,
                 cycleTimingId: formData.cycleTimingId,
@@ -235,17 +259,9 @@ export default function EditEmployeePage() {
                                 <InputField label="Name *" value={formData.name}
                                     onChange={(v) => setFormData({ ...formData, name: v })} />
 
-                                <InputField label="Aadhaar Number *" value={formData.aadhaarNumber}
-                                    onChange={(v) => setFormData({ ...formData, aadhaarNumber: v })}
-                                    maxLength={12} placeholder="12-digit number" />
-
                                 <InputField label="Mobile Number *" value={formData.mobile}
                                     onChange={(v) => setFormData({ ...formData, mobile: v })}
                                     maxLength={10} placeholder="10-digit number" />
-
-                                <InputField label="PAN Number" value={formData.panNumber}
-                                    onChange={(v) => setFormData({ ...formData, panNumber: v })}
-                                    maxLength={10} placeholder="AAAAA9999A" />
 
                                 <InputField type="date" label="Date of Birth" value={formData.dob}
                                     onChange={(v) => setFormData({ ...formData, dob: v })} />
@@ -264,48 +280,112 @@ export default function EditEmployeePage() {
                                 onChange={(v) => setFormData({ ...formData, permanentAddress: v })} />
 
                             {/* PAY INFO */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <InputField label="Hourly Rate *" type="number" step="0.01" value={formData.hourlyRate}
                                     onChange={(v) => setFormData({ ...formData, hourlyRate: v })} />
-
-                                <InputField label="PF Amount Per Day" type="number" step="0.01" value={String(formData.pfAmountPerDay)}
-                                    onChange={(v) => setFormData({ ...formData, pfAmountPerDay: Number(v) })} />
                             </div>
 
-                            {/* IDENTIFICATION */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border p-4 rounded-md">
-                                <div>
-                                    <Label>PF ID</Label>
-                                    <Input value={formData.pfId}
-                                        onChange={(e) => setFormData({ ...formData, pfId: e.target.value })} />
-                                    <div className="flex items-center mt-2">
-                                        <Switch checked={formData.pfActive}
-                                            onCheckedChange={(v) => setFormData({ ...formData, pfActive: v })} />
-                                        <span className="ml-2 text-sm">PF Active</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <InputField label="PAN Number" value={formData.panNumber}
+                                    onChange={(v) => setFormData({ ...formData, panNumber: v })}
+                                    maxLength={10} placeholder="AAAAA9999A" />
+                                <InputField label="Aadhaar Number *" value={formData.aadhaarNumber}
+                                    onChange={(v) => setFormData({ ...formData, aadhaarNumber: v })}
+                                    maxLength={12} placeholder="12-digit number" />
+                            </div>
+
+                            {/* PAYROLL DEDUCTIONS */}
+                            <div className="space-y-4 border rounded-xl p-4 bg-slate-50">
+                                <h3 className="text-sm font-bold text-slate-700 pb-2 border-b">Payroll Deductions</h3>
+
+                                <div className="space-y-6">
+                                    {/* PF */}
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                        <div className="pb-2 flex items-center mt-2">
+                                            <Switch checked={formData.pfActive} onCheckedChange={(v) => setFormData({ ...formData, pfActive: v })} />
+                                            <Label className="ml-2 font-semibold text-slate-700">PF Active</Label>
+                                        </div>
+                                        <div>
+                                            <Label>PF ID</Label>
+                                            <Input value={formData.pfId} onChange={(e) => setFormData({ ...formData, pfId: e.target.value })} placeholder="Provident Fund ID" />
+                                        </div>
+                                        <InputField label="PF Amount/Day (₹)" type="number" step="0.01" value={String(formData.pfAmountPerDay)}
+                                            onChange={(v) => setFormData({ ...formData, pfAmountPerDay: Number(v) })} />
+                                    </div>
+
+                                    {/* ESIC */}
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                        <div className="pb-2 flex items-center mt-2">
+                                            <Switch checked={formData.esicActive} onCheckedChange={(v) => setFormData({ ...formData, esicActive: v })} />
+                                            <Label className="ml-2 font-semibold text-slate-700">ESIC Active</Label>
+                                        </div>
+                                        <div>
+                                            <Label>ESIC ID</Label>
+                                            <Input value={formData.esicId} onChange={(e) => setFormData({ ...formData, esicId: e.target.value })} placeholder="ESIC ID" />
+                                        </div>
+                                        <InputField label="ESIC Amount/Day (₹)" type="number" step="0.01" value={String(formData.esicAmountPerDay)}
+                                            onChange={(v) => setFormData({ ...formData, esicAmountPerDay: Number(v) })} />
+                                    </div>
+
+                                    {/* PT */}
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                        <div className="pb-2 flex items-center mt-2">
+                                            <Switch checked={formData.ptActive} onCheckedChange={(v) => setFormData({ ...formData, ptActive: v })} />
+                                            <Label className="ml-2 font-semibold text-slate-700">PT Active</Label>
+                                        </div>
+                                        <div>
+                                            <Label>PT ID</Label>
+                                            <Input value={formData.ptId} onChange={(e) => setFormData({ ...formData, ptId: e.target.value })} placeholder="Professional Tax ID" />
+                                        </div>
+                                        <InputField label="PT Amount/Day (₹)" type="number" step="0.01" value={String(formData.ptAmountPerDay)}
+                                            onChange={(v) => setFormData({ ...formData, ptAmountPerDay: Number(v) })} />
+                                    </div>
+
+                                    {/* WBC */}
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                        <div className="pb-2 flex items-center mt-2">
+                                            <Switch checked={formData.wbcActive} onCheckedChange={(v) => setFormData({ ...formData, wbcActive: v })} />
+                                            <Label className="ml-2 font-semibold text-slate-700">WBC Active</Label>
+                                        </div>
+                                        <div>
+                                            <Label>WBC ID</Label>
+                                            <Input value={formData.wbcId} onChange={(e) => setFormData({ ...formData, wbcId: e.target.value })} placeholder="WBC ID" />
+                                        </div>
+                                        <InputField label="WBC Amount/Day (₹)" type="number" step="0.01" value={String(formData.wbcAmountPerDay)}
+                                            onChange={(v) => setFormData({ ...formData, wbcAmountPerDay: Number(v) })} />
+                                    </div>
+
+                                    {/* MLWF */}
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_2fr] gap-4 items-end">
+                                        <div className="pb-2 flex items-center mt-2">
+                                            <Switch checked={formData.mlwfActive} onCheckedChange={(v) => setFormData({ ...formData, mlwfActive: v })} />
+                                            <Label className="ml-2 font-semibold text-slate-700">MLWF Active</Label>
+                                        </div>
+                                        <div>
+                                            <Label>MLWF ID</Label>
+                                            <Input value={formData.mlwfId} onChange={(e) => setFormData({ ...formData, mlwfId: e.target.value })} placeholder="MLWF ID" />
+                                        </div>
+                                        <InputField label="MLWF Amount/Day (₹)" type="number" step="0.01" value={String(formData.mlwfAmountPerDay)}
+                                            onChange={(v) => setFormData({ ...formData, mlwfAmountPerDay: Number(v) })} />
                                     </div>
                                 </div>
+                            </div>
 
+                            {/* BANK DETAILS */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <Label>ESIC ID</Label>
-                                    <Input value={formData.esicId}
-                                        onChange={(e) => setFormData({ ...formData, esicId: e.target.value })} />
-                                    <div className="flex items-center mt-2">
-                                        <Switch checked={formData.esicActive}
-                                            onCheckedChange={(v) => setFormData({ ...formData, esicActive: v })} />
-                                        <span className="ml-2 text-sm">ESIC Active</span>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
                                     <Label>Bank Account Number</Label>
                                     <Input value={formData.bankAccountNumber}
                                         onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })} />
+                                </div>
+                                <div>
                                     <Label>IFSC Code</Label>
                                     <Input value={formData.ifscCode}
                                         onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })}
                                         maxLength={11} placeholder="11-character code" />
                                 </div>
                             </div>
+
 
                             {/* ASSIGNMENTS */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

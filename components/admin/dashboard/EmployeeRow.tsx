@@ -131,6 +131,14 @@ export function EmployeeRow({
                 </td>
             )}
 
+            {columnVisibility.pfActive && (
+                <td className="w-[100px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    <Badge variant={employee.pfActive ? "default" : "secondary"} className={employee.pfActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
+                        {employee.pfActive ? "Active" : "Inactive"}
+                    </Badge>
+                </td>
+            )}
+
             {columnVisibility.pfPerDay && (
                 <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50">
                     {employee.pfPerDay ? `₹${employee.pfPerDay}` : "—"}
@@ -140,6 +148,80 @@ export function EmployeeRow({
             {columnVisibility.esicId && (
                 <td className="w-[130px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
                     {employee.esicId || "—"}
+                </td>
+            )}
+
+            {columnVisibility.esicActive && (
+                <td className="w-[100px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    <Badge variant={employee.esicActive ? "default" : "secondary"} className={employee.esicActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
+                        {employee.esicActive ? "Active" : "Inactive"}
+                    </Badge>
+                </td>
+            )}
+
+            {columnVisibility.esicPerDay && (
+                <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50">
+                    {employee.esicAmountPerDay ? `₹${employee.esicAmountPerDay}` : "—"}
+                </td>
+            )}
+
+            {columnVisibility.ptId && (
+                <td className="w-[130px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    {employee.ptId || "—"}
+                </td>
+            )}
+
+            {columnVisibility.ptActive && (
+                <td className="w-[100px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    <Badge variant={employee.ptActive ? "default" : "secondary"} className={employee.ptActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
+                        {employee.ptActive ? "Active" : "Inactive"}
+                    </Badge>
+                </td>
+            )}
+
+            {columnVisibility.ptPerDay && (
+                <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50">
+                    {employee.ptAmountPerDay ? `₹${employee.ptAmountPerDay}` : "—"}
+                </td>
+            )}
+
+            {columnVisibility.wbcId && (
+                <td className="w-[130px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    {employee.wbcId || "—"}
+                </td>
+            )}
+
+            {columnVisibility.wbcActive && (
+                <td className="w-[100px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    <Badge variant={employee.wbcActive ? "default" : "secondary"} className={employee.wbcActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
+                        {employee.wbcActive ? "Active" : "Inactive"}
+                    </Badge>
+                </td>
+            )}
+
+            {columnVisibility.wbcPerDay && (
+                <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50">
+                    {employee.wbcAmountPerDay ? `₹${employee.wbcAmountPerDay}` : "—"}
+                </td>
+            )}
+
+            {columnVisibility.mlwfId && (
+                <td className="w-[130px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    {employee.mlwfId || "—"}
+                </td>
+            )}
+
+            {columnVisibility.mlwfActive && (
+                <td className="w-[100px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 text-xs">
+                    <Badge variant={employee.mlwfActive ? "default" : "secondary"} className={employee.mlwfActive ? "bg-green-100 text-green-700 hover:bg-green-100" : "bg-gray-100 text-gray-600 hover:bg-gray-100"}>
+                        {employee.mlwfActive ? "Active" : "Inactive"}
+                    </Badge>
+                </td>
+            )}
+
+            {columnVisibility.mlwfPerDay && (
+                <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50">
+                    {employee.mlwfAmountPerDay ? `₹${employee.mlwfAmountPerDay}` : "—"}
                 </td>
             )}
 

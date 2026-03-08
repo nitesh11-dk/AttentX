@@ -117,158 +117,230 @@ export function EmployeeTable({
             <table className="min-w-full w-max table-fixed text-sm border-separate border-spacing-0">
               {/* HEADER (TOP STICKY ONLY) */}
               <thead className="sticky top-0 z-20">
-              <tr className="bg-slate-50 border-b border-slate-200">
-                {columnVisibility.name && (
-                  <th className="w-[150px] md:w-[180px] px-3 md:px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200 bg-slate-50">
-                    Name
-                  </th>
-                )}
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  {columnVisibility.name && (
+                    <th className="w-[150px] md:w-[180px] px-3 md:px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200 bg-slate-50">
+                      Name
+                    </th>
+                  )}
 
-                {columnVisibility.empCode && (
-                  <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Emp Code
-                  </th>
-                )}
+                  {columnVisibility.empCode && (
+                    <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Emp Code
+                    </th>
+                  )}
 
-                {columnVisibility.mobile && (
-                  <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Mobile
-                  </th>
-                )}
+                  {columnVisibility.mobile && (
+                    <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Mobile
+                    </th>
+                  )}
 
-                {columnVisibility.pfId && (
-                  <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    PF ID
-                  </th>
-                )}
+                  {columnVisibility.pfId && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      PF ID
+                    </th>
+                  )}
 
-                {columnVisibility.pfPerDay && (
-                  <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    PF/Day
-                  </th>
-                )}
+                  {columnVisibility.pfActive && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      PF Active
+                    </th>
+                  )}
 
-                {columnVisibility.esicId && (
-                  <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    ESIC ID
-                  </th>
-                )}
+                  {columnVisibility.pfPerDay && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      PF/Day
+                    </th>
+                  )}
 
-                {columnVisibility.aadhaar && (
-                  <th className="w-[140px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Aadhaar
-                  </th>
-                )}
+                  {columnVisibility.esicId && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      ESIC ID
+                    </th>
+                  )}
 
-                {columnVisibility.bankAccount && (
-                  <th className="w-[160px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Bank Account
-                  </th>
-                )}
+                  {columnVisibility.esicActive && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      ESIC Active
+                    </th>
+                  )}
 
-                {columnVisibility.ifscCode && (
-                  <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    IFSC
-                  </th>
-                )}
+                  {columnVisibility.esicPerDay && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      ESIC/Day
+                    </th>
+                  )}
 
-                {columnVisibility.panNumber && (
-                  <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    PAN
-                  </th>
-                )}
+                  {columnVisibility.ptId && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      PT ID
+                    </th>
+                  )}
 
-                {columnVisibility.rate && (
-                  <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Rate
-                  </th>
-                )}
+                  {columnVisibility.ptActive && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      PT Active
+                    </th>
+                  )}
 
-                {columnVisibility.joinedAt && (
-                  <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Joined At
-                  </th>
-                )}
+                  {columnVisibility.ptPerDay && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      PT/Day
+                    </th>
+                  )}
 
-                {columnVisibility.cycle && (
-                  <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Cycle
-                  </th>
-                )}
+                  {columnVisibility.wbcId && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      WBC ID
+                    </th>
+                  )}
 
-                {columnVisibility.present && (
-                  <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Present
-                  </th>
-                )}
+                  {columnVisibility.wbcActive && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      WBC Active
+                    </th>
+                  )}
 
-                {columnVisibility.absent && (
-                  <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Absent
-                  </th>
-                )}
+                  {columnVisibility.wbcPerDay && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      WBC/Day
+                    </th>
+                  )}
 
-                {columnVisibility.totalHrs && (
-                  <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Total Hrs
-                  </th>
-                )}
+                  {columnVisibility.mlwfId && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      MLWF ID
+                    </th>
+                  )}
 
-                {columnVisibility.ot && (
-                  <th className="w-[70px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    OT
-                  </th>
-                )}
+                  {columnVisibility.mlwfActive && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      MLWF Active
+                    </th>
+                  )}
 
-                {columnVisibility.advance && (
-                  <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
-                    Advance
-                  </th>
-                )}
+                  {columnVisibility.mlwfPerDay && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      MLWF/Day
+                    </th>
+                  )}
 
-                {columnVisibility.deductions && (
-                  <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Deductions
-                  </th>
-                )}
+                  {columnVisibility.aadhaar && (
+                    <th className="w-[140px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Aadhaar
+                    </th>
+                  )}
 
-                {columnVisibility.netSalary && (
-                  <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
-                    Net Salary
-                  </th>
-                )}
+                  {columnVisibility.bankAccount && (
+                    <th className="w-[160px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Bank Account
+                    </th>
+                  )}
 
-                {columnVisibility.actions && (
-                  <th className="w-[220px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">
-                    Actions
-                  </th>
-                )}
-              </tr>
-            </thead>
+                  {columnVisibility.ifscCode && (
+                    <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      IFSC
+                    </th>
+                  )}
 
-            <tbody className="bg-white divide-y divide-gray-100">
-              {/* DATA ROWS */}
-              {rows.map(({ employee, summary }) => {
-                const cycle = getCycleById(employee.cycleTimingId);
-                return (
-                  <EmployeeRow
-                    key={`${employee.id}-${summary?.cycleStart || "no-summary"}`}
-                    employee={employee}
-                    summary={summary}
-                    columnVisibility={columnVisibility}
-                    recalcLoading={recalcLoading}
-                    isBusy={isBusy}
-                    onRecalc={onRecalc}
-                    onDownloadBarcode={onDownloadBarcode}
-                    barcodeRef={(el) => {
-                      barcodeRefs.current[employee.id] = el;
-                    }}
-                    cycleName={cycle?.name}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
+                  {columnVisibility.panNumber && (
+                    <th className="w-[120px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      PAN
+                    </th>
+                  )}
+
+                  {columnVisibility.rate && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Rate
+                    </th>
+                  )}
+
+                  {columnVisibility.joinedAt && (
+                    <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Joined At
+                    </th>
+                  )}
+
+                  {columnVisibility.cycle && (
+                    <th className="w-[200px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Cycle
+                    </th>
+                  )}
+
+                  {columnVisibility.present && (
+                    <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Present
+                    </th>
+                  )}
+
+                  {columnVisibility.absent && (
+                    <th className="w-[80px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Absent
+                    </th>
+                  )}
+
+                  {columnVisibility.totalHrs && (
+                    <th className="w-[90px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Total Hrs
+                    </th>
+                  )}
+
+                  {columnVisibility.ot && (
+                    <th className="w-[70px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      OT
+                    </th>
+                  )}
+
+                  {columnVisibility.advance && (
+                    <th className="w-[100px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap border-r border-slate-200">
+                      Advance
+                    </th>
+                  )}
+
+                  {columnVisibility.deductions && (
+                    <th className="w-[110px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Deductions
+                    </th>
+                  )}
+
+                  {columnVisibility.netSalary && (
+                    <th className="w-[130px] px-4 py-3 text-left text-xs font-semibold text-slate-900 uppercase whitespace-nowrap border-r border-slate-200">
+                      Net Salary
+                    </th>
+                  )}
+
+                  {columnVisibility.actions && (
+                    <th className="w-[220px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">
+                      Actions
+                    </th>
+                  )}
+                </tr>
+              </thead>
+
+              <tbody className="bg-white divide-y divide-gray-100">
+                {/* DATA ROWS */}
+                {rows.map(({ employee, summary }) => {
+                  const cycle = getCycleById(employee.cycleTimingId);
+                  return (
+                    <EmployeeRow
+                      key={`${employee.id}-${summary?.cycleStart || "no-summary"}`}
+                      employee={employee}
+                      summary={summary}
+                      columnVisibility={columnVisibility}
+                      recalcLoading={recalcLoading}
+                      isBusy={isBusy}
+                      onRecalc={onRecalc}
+                      onDownloadBarcode={onDownloadBarcode}
+                      barcodeRef={(el) => {
+                        barcodeRefs.current[employee.id] = el;
+                      }}
+                      cycleName={cycle?.name}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </CardContent>

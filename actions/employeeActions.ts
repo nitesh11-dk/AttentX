@@ -76,6 +76,19 @@ export async function createEmployee(
       };
     }
 
+    const deductionFields = ["esicAmountPerDay", "ptAmountPerDay", "wbcAmountPerDay", "mlwfAmountPerDay"];
+    for (const dField of deductionFields) {
+      if (
+        data[dField] !== undefined &&
+        (isNaN(Number(data[dField])) || Number(data[dField]) < 0)
+      ) {
+        return {
+          success: false,
+          message: `${dField} must be a valid non-negative number`,
+        };
+      }
+    }
+
     const empCode = await generateUniqueEmpCode();
 
     /* ---------- CREATE ---------- */
@@ -98,6 +111,19 @@ export async function createEmployee(
 
         esicId: data.esicId || null,
         esicActive: data.esicActive ?? true,
+        esicAmountPerDay: data.esicAmountPerDay !== undefined ? Number(data.esicAmountPerDay) : 0,
+
+        ptId: data.ptId || null,
+        ptActive: data.ptActive ?? true,
+        ptAmountPerDay: data.ptAmountPerDay !== undefined ? Number(data.ptAmountPerDay) : 0,
+
+        wbcId: data.wbcId || null,
+        wbcActive: data.wbcActive ?? true,
+        wbcAmountPerDay: data.wbcAmountPerDay !== undefined ? Number(data.wbcAmountPerDay) : 0,
+
+        mlwfId: data.mlwfId || null,
+        mlwfActive: data.mlwfActive ?? true,
+        mlwfAmountPerDay: data.mlwfAmountPerDay !== undefined ? Number(data.mlwfAmountPerDay) : 0,
 
         panNumber: data.panNumber || null,
         dob: data.dob ? new Date(data.dob) : null,
@@ -149,6 +175,21 @@ export async function createEmployee(
             success: false,
             message: "ESIC ID already exists. Please use a different ESIC ID.",
           };
+        case "ptId":
+          return {
+            success: false,
+            message: "PT ID already exists. Please use a different PT ID.",
+          };
+        case "wbcId":
+          return {
+            success: false,
+            message: "WBC ID already exists. Please use a different WBC ID.",
+          };
+        case "mlwfId":
+          return {
+            success: false,
+            message: "MLWF ID already exists. Please use a different MLWF ID.",
+          };
         case "panNumber":
           return {
             success: false,
@@ -182,6 +223,7 @@ export async function getEmployees(): Promise<ActionResponse<any[]>> {
 
     return {
       success: true,
+      message: "Employees fetched successfully",
       data: employees.map(serializeEmployee),
     };
   } catch (error: any) {
@@ -209,7 +251,7 @@ export async function getEmployeeById(
     });
     if (!emp) return { success: false, message: "Employee not found" };
 
-    return { success: true, data: serializeEmployee(emp) };
+    return { success: true, message: "Employee fetched successfully", data: serializeEmployee(emp) };
   } catch (error: any) {
     return { success: false, message: error.message };
   }
@@ -254,6 +296,20 @@ export async function updateEmployee(
       updates.pfAmountPerDay = pf;
     }
 
+    const dFields = ["esicAmountPerDay", "ptAmountPerDay", "wbcAmountPerDay", "mlwfAmountPerDay"];
+    for (const dField of dFields) {
+      if (updates[dField] !== undefined) {
+        const val = Number(updates[dField]);
+        if (isNaN(val) || val < 0) {
+          return {
+            success: false,
+            message: `${dField} must be a valid non-negative number`,
+          };
+        }
+        updates[dField] = val;
+      }
+    }
+
     /* ----------------------------
        EMPTY STRING → NULL
        (CRITICAL FOR UNIQUE FIELDS)
@@ -261,6 +317,9 @@ export async function updateEmployee(
     const nullableStringFields = [
       "pfId",
       "esicId",
+      "ptId",
+      "wbcId",
+      "mlwfId",
       "panNumber",
       "bankAccountNumber",
       "ifscCode",
@@ -287,6 +346,15 @@ export async function updateEmployee(
 
     if (updates.esicActive !== undefined) {
       updates.esicActive = Boolean(updates.esicActive);
+    }
+    if (updates.ptActive !== undefined) {
+      updates.ptActive = Boolean(updates.ptActive);
+    }
+    if (updates.wbcActive !== undefined) {
+      updates.wbcActive = Boolean(updates.wbcActive);
+    }
+    if (updates.mlwfActive !== undefined) {
+      updates.mlwfActive = Boolean(updates.mlwfActive);
     }
 
     /* ----------------------------
@@ -328,6 +396,12 @@ export async function updateEmployee(
           "PF ID already exists for another employee.",
         esicId:
           "ESIC ID already exists for another employee.",
+        ptId:
+          "PT ID already exists for another employee.",
+        wbcId:
+          "WBC ID already exists for another employee.",
+        mlwfId:
+          "MLWF ID already exists for another employee.",
         panNumber:
           "PAN number already exists for another employee.",
         bankAccountNumber:
