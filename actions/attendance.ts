@@ -41,6 +41,7 @@ export async function getAttendanceWallet(
 ): Promise<{
     id: string;
     employeeId: string;
+    employeeDepartmentId: string;
     entries: {
         id: string;
         timestamp: Date;
@@ -55,6 +56,7 @@ export async function getAttendanceWallet(
     const wallet = await prisma.attendanceWallet.findUnique({
         where: { employeeId },
         include: {
+            employee: { select: { departmentId: true } },
             entries: {
                 orderBy: { timestamp: "asc" },
                 include: {
@@ -70,6 +72,7 @@ export async function getAttendanceWallet(
     return {
         id: wallet.id,
         employeeId: wallet.employeeId,
+        employeeDepartmentId: wallet.employee.departmentId,
         entries: wallet.entries.map((e) => ({
             id: e.id,
             timestamp: e.timestamp,
@@ -369,7 +372,6 @@ export async function updateAttendanceEntry(
     data: {
         timestamp?: string;
         scanType?: "in" | "out";
-        departmentId?: string;
         scannedBy?: string;
         autoClosed?: boolean;  // allow toggling auto-close flag
     }
@@ -380,7 +382,6 @@ export async function updateAttendanceEntry(
             data: {
                 timestamp: data.timestamp ? new Date(data.timestamp) : undefined,
                 scanType: data.scanType,
-                departmentId: data.departmentId,
                 scannedBy: data.scannedBy,
                 autoClosed: data.autoClosed,
             },
@@ -410,6 +411,15 @@ export async function addManualAttendanceEntry(data: {
 
         if (!wallet) return { success: false, message: "Wallet not found" };
 
+        const employee = await prisma.employee.findUnique({
+            where: { id: data.employeeId },
+            select: { departmentId: true }
+        });
+
+        if (!employee) return { success: false, message: "Employee not found" };
+
+        const resolvedDepartmentId = employee.departmentId;
+
         // Use provided supervisor ID (if any), else fall back to the current admin
         const resolvedScannedBy = data.scannedBy || user.id;
 
@@ -419,7 +429,7 @@ export async function addManualAttendanceEntry(data: {
             data: {
                 timestamp: entryTimestamp,
                 scanType: data.scanType,
-                departmentId: data.departmentId,
+                departmentId: resolvedDepartmentId,
                 scannedBy: resolvedScannedBy,
                 walletId: wallet.id,
                 autoClosed: false,
@@ -443,7 +453,7 @@ export async function addManualAttendanceEntry(data: {
                 data: {
                     timestamp: outTimestamp,
                     scanType: "out",
-                    departmentId: data.departmentId,
+                    departmentId: resolvedDepartmentId,
                     scannedBy: resolvedScannedBy,
                     walletId: wallet.id,
                     autoClosed: true,

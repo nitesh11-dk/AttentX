@@ -18,6 +18,7 @@ export default function EmployeeLogsPage() {
     const dateKey = search.get("date");
 
     const [entries, setEntries] = useState<any[]>([]);
+    const [employeeDepartmentId, setEmployeeDepartmentId] = useState<string>("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +42,7 @@ export default function EmployeeLogsPage() {
             });
 
             setEntries(filtered);
+            setEmployeeDepartmentId(wallet.employeeDepartmentId);
         } catch (err) {
             console.error("Error loading entries:", err);
             const errorMessage = err instanceof Error ? err.message : "Failed to load entries";
@@ -81,6 +83,7 @@ export default function EmployeeLogsPage() {
                 <DayEntriesTable
                     entries={entries}
                     employeeId={employeeId}
+                    employeeDepartmentId={employeeDepartmentId}
                     dateKey={dateKey}
                     onDone={loadEntries}
                 />

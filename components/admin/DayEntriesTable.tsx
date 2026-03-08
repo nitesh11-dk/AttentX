@@ -16,7 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Trash2, Check, X, Plus } from "lucide-react";
 
-export default function DayEntriesTable({ entries: initialEntries, employeeId, dateKey, onDone }: any) {
+export default function DayEntriesTable({ entries: initialEntries, employeeId, employeeDepartmentId, dateKey, onDone }: any) {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState({ time: "", scanType: "in", departmentId: "", supervisorId: "", autoClosed: false });
     const [departments, setDepartments] = useState<any[]>([]);
@@ -34,9 +34,15 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
             if (res.success) setDepartments(res.data || []);
 
             const svRes = await getSupervisors();
-            if (svRes.success) setSupervisors(svRes.data || []);
+            if (svRes.success && svRes.data) {
+                // Filter supervisors: only those who have access to the employee's department, or are Super Admins
+                const filteredSvs = svRes.data.filter((s: any) =>
+                    s.isSuperAdmin || (s.accessedDepartments && s.accessedDepartments.includes(employeeDepartmentId))
+                );
+                setSupervisors(filteredSvs);
+            }
         })();
-    }, []);
+    }, [employeeDepartmentId]);
 
     useEffect(() => {
         setEntries(initialEntries);
@@ -73,7 +79,7 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
         setEditForm((prev) => ({
             ...prev,
             supervisorId,
-            departmentId: sv?.departmentId || prev.departmentId,
+            departmentId: sv?.accessedDepartments?.[0] || prev.departmentId,
         }));
     };
 
@@ -83,7 +89,7 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
         setAddForm((prev) => ({
             ...prev,
             supervisorId,
-            departmentId: sv?.departmentId || prev.departmentId,
+            departmentId: sv?.accessedDepartments?.[0] || prev.departmentId,
         }));
     };
 
@@ -97,7 +103,6 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
             const res = await updateAttendanceEntry(entryId, {
                 timestamp: iso,
                 scanType: editForm.scanType as "in" | "out",
-                departmentId: editForm.departmentId || undefined,
                 scannedBy: editForm.supervisorId || undefined,
                 autoClosed: editForm.autoClosed,
             });
@@ -152,7 +157,6 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
             time: "09:00",
             scanType: "in",
             supervisorId: firstSv?.id || "",
-            departmentId: firstSv?.departmentId || "",
         });
     };
 
@@ -218,17 +222,19 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                             <SelectContent>
                                 {supervisors.map((s) => (
                                     <SelectItem key={s.id} value={s.id}>
-                                        {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                        {s.username} {s.isSuperAdmin ? "(Super Admin)" : (s.accessedDepartments?.[0] ? `(${departments.find(d => d.id === s.accessedDepartments[0])?.name || "Unknown"})` : "")}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
 
-                        {/* Auto-filled dept label */}
+                        {/* Auto-filled dept label (purely visual for admin form) */}
                         {addForm.supervisorId && (
                             <span className="text-sm text-gray-500 whitespace-nowrap">
-                                Dept: <span className="font-medium text-gray-700">
-                                    {supervisors.find(s => s.id === addForm.supervisorId)?.department?.name || "—"}
+                                <span className="font-medium text-gray-700">
+                                    {supervisors.find(s => s.id === addForm.supervisorId)?.isSuperAdmin
+                                        ? "All Departments"
+                                        : `Dept: ${departments.find(d => d.id === supervisors.find(s => s.id === addForm.supervisorId)?.accessedDepartments?.[0])?.name || "—"}`}
                                 </span>
                             </span>
                         )}
@@ -327,7 +333,10 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                         <td className="p-2">
                                             {isEditing ? (
                                                 <span className="text-sm text-gray-600">
-                                                    {supervisors.find(s => s.id === editForm.supervisorId)?.department?.name || e.department?.name || "—"}
+                                                    {supervisors.find(s => s.id === editForm.supervisorId)?.isSuperAdmin
+                                                        ? "All Departments"
+                                                        : (departments.find(d => d.id === supervisors.find(s => s.id === editForm.supervisorId)?.accessedDepartments?.[0])?.name || e.department?.name || "—")
+                                                    }
                                                 </span>
                                             ) : (
                                                 e.department?.name || "Unknown"
@@ -342,7 +351,7 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                                     <SelectContent>
                                                         {supervisors.map((s) => (
                                                             <SelectItem key={s.id} value={s.id}>
-                                                                {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                                                {s.username} {s.isSuperAdmin ? "(Super Admin)" : (s.accessedDepartments?.[0] ? `(${departments.find(d => d.id === s.accessedDepartments[0])?.name || "Unknown"})` : "")}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
@@ -509,14 +518,17 @@ export default function DayEntriesTable({ entries: initialEntries, employeeId, d
                                                 <SelectContent>
                                                     {supervisors.map((s) => (
                                                         <SelectItem key={s.id} value={s.id}>
-                                                            {s.username}{s.department ? ` (${s.department.name})` : ""}
+                                                            {s.username} {s.isSuperAdmin ? "(Super Admin)" : (s.accessedDepartments?.[0] ? `(${departments.find(d => d.id === s.accessedDepartments[0])?.name || "Unknown"})` : "")}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                             {editForm.supervisorId && (
                                                 <p className="text-xs text-gray-500 mt-1">
-                                                    Dept: <span className="font-medium">{supervisors.find(s => s.id === editForm.supervisorId)?.department?.name || "—"}</span>
+                                                    {supervisors.find(s => s.id === editForm.supervisorId)?.isSuperAdmin
+                                                        ? <span className="font-medium">All Departments</span>
+                                                        : <>Dept: <span className="font-medium">{departments.find(d => d.id === supervisors.find(s => s.id === editForm.supervisorId)?.accessedDepartments?.[0])?.name || "—"}</span></>
+                                                    }
                                                 </p>
                                             )}
                                             {/* autoClosed toggle — always visible in edit mode */}
