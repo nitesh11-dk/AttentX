@@ -228,6 +228,14 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     let newScanType: "in" | "out" = "in";
     if (updatedLastEntry && updatedLastEntry.scanType === "in") {
         newScanType = "out";
+
+        // ── 30-Minute Restriction Check ──
+        const MINIMUM_DURATION_MS = 30 * 60 * 1000; // 30 mins
+        const lastInTime = new Date(updatedLastEntry.timestamp).getTime();
+        if (now.getTime() - lastInTime < MINIMUM_DURATION_MS) {
+            const timeRemaining = Math.ceil((MINIMUM_DURATION_MS - (now.getTime() - lastInTime)) / 60000);
+            throw new Error(`You must wait at least 30 minutes after scanning IN to scan OUT. Please try again in ${timeRemaining} minute(s).`);
+        }
     } else {
         newScanType = "in";
     }
