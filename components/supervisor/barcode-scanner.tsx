@@ -1,20 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { ScanResult } from "@/actions/attendance";
+import { ScanResult } from "@/app/dashboard/actions";
 import BarcodeScanner from "@/components/BarCode";
+import SupervisorFaceScanner from "@/components/supervisor/face-scanner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, Clock } from "lucide-react";
 
 type Props = {
-  scanEmployee: (empCode: string) => Promise<ScanResult>;
+  scanEmployee: (empCode: string, scanMethod?: "barcode" | "face") => Promise<ScanResult>;
 };
 
 export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
+  const [activeTab, setActiveTab] = useState<"barcode" | "face">("barcode");
   const [lastScannedEmployee, setLastScannedEmployee] =
-    useState<ScanResult | null>(null);
+    useState<(ScanResult & { success: true }) | null>(null);
   const [scanTime, setScanTime] = useState<Date | null>(null);
+  const [registeredFacesCount, setRegisteredFacesCount] = useState<number | null>(null);
 
   const [messageType, setMessageType] =
     useState<"success" | "error">("success");
@@ -57,7 +60,7 @@ export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
     setIsProcessing(true);
     setScannedCode(empCode);
 
-    const result = await scanEmployee(empCode);
+    const result = await scanEmployee(empCode, activeTab);
 
     // ❌ INVALID EMPLOYEE / ERROR CASE
     if (!result.success) {
@@ -81,8 +84,7 @@ export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
     setScanTime(now);
 
     setPopupMessage(
-      `Employee ${result.employeeName} checked ${
-        result.lastScanType === "out" ? "OUT" : "IN"
+      `Employee ${result.employeeName} checked ${result.lastScanType === "out" ? "OUT" : "IN"
       }`
     );
 
@@ -116,6 +118,33 @@ export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
         Supervisor Attendance Scanner
       </h2>
 
+      {/* 🟢 TABS */}
+      <div className="flex w-full bg-slate-100 p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab("barcode")}
+          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${activeTab === "barcode"
+            ? "bg-white text-primary shadow-sm"
+            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200"
+            }`}
+        >
+          Scan Barcode
+        </button>
+        <button
+          onClick={() => setActiveTab("face")}
+          className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all ${activeTab === "face"
+            ? "bg-white text-primary shadow-sm flex items-center justify-center gap-2"
+            : "text-slate-500 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center gap-2"
+            }`}
+        >
+          <span>Face Recognition</span>
+          {registeredFacesCount !== null && (
+            <span className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-bold">
+              {registeredFacesCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* ⏳ Loader */}
       {isProcessing && (
         <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-40">
@@ -123,15 +152,25 @@ export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
         </div>
       )}
 
-      {/* 📷 Scanner */}
-      <Card className="w-full border p-2 rounded">
-        <BarcodeScanner
-          onScan={handleScan}
-          fps={10}
-          qrboxSize={300}
-          openTriggerCount={scannerOpenTriggerCount}
-        />
-      </Card>
+      {/* 📷 Scanner Component */}
+      {activeTab === "barcode" ? (
+        <Card className="w-full border p-2 rounded">
+          <BarcodeScanner
+            onScan={handleScan}
+            fps={10}
+            qrboxSize={300}
+            openTriggerCount={scannerOpenTriggerCount}
+          />
+        </Card>
+      ) : (
+        <Card className="w-full border p-2 rounded">
+          <SupervisorFaceScanner
+            onScan={handleScan}
+            isProcessing={isProcessing}
+            onFacesLoaded={setRegisteredFacesCount}
+          />
+        </Card>
+      )}
 
       {/* ✍️ Manual Input */}
       <form
@@ -166,11 +205,10 @@ export default function SupervisorBarcodeScanner({ scanEmployee }: Props) {
             <CardContent className="text-center space-y-3">
               <div className="flex justify-center">
                 <User
-                  className={`h-8 w-8 ${
-                    messageType === "success"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
+                  className={`h-8 w-8 ${messageType === "success"
+                    ? "text-green-600"
+                    : "text-red-600"
+                    }`}
                 />
               </div>
 

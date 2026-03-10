@@ -37,6 +37,7 @@ export default function AdminLayout({
         { name: "Manage Shifts", href: "/admin/dashboard/shift-types", icon: Clock },
         { name: "Manage Cycle Timings", href: "/admin/dashboard/cycle-time", icon: CalendarDays },
         { name: "Add Employee", href: "/admin/dashboard/addemp", icon: PlusCircle },
+        { name: "Face Registration", href: "/admin/dashboard/register", icon: PlusCircle },
         { name: "Attendance", href: "/admin/dashboard/attendance", icon: FileText },
         { name: "Manage Supervisors", href: "/admin/dashboard/supervisors", icon: Shield },
         { name: "Manage Admins", href: "/admin/dashboard/admins", icon: ShieldCheck },

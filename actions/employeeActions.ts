@@ -218,6 +218,7 @@ export async function getEmployees(): Promise<ActionResponse<any[]>> {
   try {
     const employees = await prisma.employee.findMany({
       orderBy: { createdAt: "desc" },
+      include: { faceData: true },
     });
 
     return {
@@ -438,5 +439,48 @@ export async function deleteEmployee(
   } catch (error: any) {
     console.error("❌ Delete Employee Error:", error);
     return { success: false, message: error.message || "Failed to delete employee" };
+  }
+}
+
+/* ----------------------------------------------------
+   REGISTER FACE
+---------------------------------------------------- */
+export async function registerFace(
+  data: { employeeId: string, empCode: string, name: string, descriptors: number[][] }
+): Promise<ActionResponse<{ count: number }>> {
+  try {
+    const { employeeId, empCode, name, descriptors } = data;
+
+    if (!employeeId || !empCode || !name || !descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
+      return { success: false, message: 'Missing required fields or descriptors array' };
+    }
+
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId }
+    });
+
+    if (!employee) {
+      return { success: false, message: 'Employee not found' };
+    }
+
+    // Delete existing face data for this employee to allow re-registration
+    await prisma.faceData.deleteMany({
+      where: { employeeId: employeeId }
+    });
+
+    // Save new face data descriptors as a single 2D array
+    const faceDataRecord = await prisma.faceData.create({
+      data: {
+        employeeId,
+        empCode,
+        name,
+        descriptors: descriptors // Passes the 2D array directly as Json
+      }
+    });
+
+    return { success: true, message: 'Face data registered successfully', data: { count: 1 } };
+  } catch (error: any) {
+    console.error('Error registering employee face:', error);
+    return { success: false, message: error.message || 'Failed to register employee face' };
   }
 }

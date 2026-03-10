@@ -78,6 +78,18 @@ model Employee {
   department        Department                 @relation(fields: [departmentId], references: [id])
   shiftType         ShiftType?                 @relation(fields: [shiftTypeId], references: [id])
   monthlySummaries  MonthlyAttendanceSummary[]
+  faceData          FaceData[]
+}
+
+model FaceData {
+  id         String   @id @default(uuid())
+  employeeId String   @unique // One-to-one mapping per employee
+  empCode    String
+  name       String
+  descriptors Json    // Stores 2D array number[][]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model CycleTiming {
@@ -120,6 +132,7 @@ model AttendanceEntry {
   scanType     ScanType
   departmentId String?          // nullable: null for auto-closed entries
   scannedBy    String?          // nullable: null for auto-closed entries
+  scanMethod   String           @default("barcode") // "barcode" or "face"
   walletId     String
   autoClosed   Boolean          @default(false)
   department   Department?      @relation(fields: [departmentId], references: [id])

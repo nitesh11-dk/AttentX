@@ -6,6 +6,7 @@ import { getUserFromCookies } from "@/lib/auth";
 
 export interface ScanAttendanceInput {
     empCode: string;
+    scanMethod?: "barcode" | "face";
 }
 
 export interface ScanResult {
@@ -19,6 +20,7 @@ export type RawEntry = {
     scanType: "in" | "out";
     departmentId: string | null;  // null for auto-closed entries
     scannedBy: string | null;     // null for auto-closed entries
+    scanMethod: string;
     autoClosed: boolean;
 };
 
@@ -108,7 +110,7 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     });
     if (!user) throw new Error("User no longer exists");
 
-    const { empCode } = input;
+    const { empCode, scanMethod = "barcode" } = input;
 
     // find employee by empCode
     const employee = await prisma.employee.findUnique({
@@ -168,31 +170,58 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
         return candidate <= endOfDay ? candidate : endOfDay;
     };
 
-    // ── Step 1: Auto-close any dangling IN that is ≥16 hrs old ──
+    // ── Step 1: Auto-close ALL dangling INs that are ≥16 hrs old ──
     // Runs BEFORE deciding newScanType so a stale IN can never be paired
     // with an OUT that arrives the next day.
+
+    // To do this reliably, we walk through the history to find currently "open" IN entries
+    let currentOpenIn: any = null;
+    for (const entry of wallet.entries) {
+        if (entry.scanType === "in") {
+            currentOpenIn = entry;
+        } else if (entry.scanType === "out") {
+            currentOpenIn = null; // Closed
+        }
+    }
+
+    // If the final state is an open IN and it's older than 16h5m, close it.
     if (
-        lastEntry &&
-        lastEntry.scanType === "in" &&
-        now.getTime() - new Date(lastEntry.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS
+        currentOpenIn &&
+        now.getTime() - new Date(currentOpenIn.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS
     ) {
         await prisma.attendanceEntry.create({
             data: {
-                timestamp: autoCloseTimestamp(new Date(lastEntry.timestamp)),
+                timestamp: autoCloseTimestamp(new Date(currentOpenIn.timestamp)),
                 scanType: "out",
-                departmentId: lastEntry.departmentId ?? employeeDeptId,
+                departmentId: currentOpenIn.departmentId ?? employeeDeptId,
                 scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
             },
         });
-        // Mark locally as OUT so the direction logic below treats this as "last OUT → new IN"
-        lastEntry.scanType = "out" as any;
+
+        // Push this new auto-closed OUT entry into our local wallet.entries array
+        // so the subsequent direction logic ("Step 2") sees it as properly closed
+        wallet.entries.push({
+            id: "temp-auto-closed",
+            timestamp: autoCloseTimestamp(new Date(currentOpenIn.timestamp)),
+            scanType: "out",
+            departmentId: currentOpenIn.departmentId ?? employeeDeptId,
+            scannedBy: user.id,
+            autoClosed: true,
+            walletId: wallet.id,
+            scanMethod: "system",
+        } as any);
+
+        currentOpenIn = null;
     }
+
+    // Update `lastEntry` since we might have just pushed an auto-closed OUT
+    const updatedLastEntry = wallet.entries.length > 0 ? wallet.entries[wallet.entries.length - 1] : null;
 
     // ── Step 2: Decide scan direction ──
     let newScanType: "in" | "out" = "in";
-    if (lastEntry && lastEntry.scanType === "in") {
+    if (updatedLastEntry && updatedLastEntry.scanType === "in") {
         newScanType = "out";
     } else {
         newScanType = "in";
@@ -205,15 +234,15 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     // as long as the current supervisor has access to the employee's department.
     if (
         newScanType === "in" &&
-        lastEntry &&
-        lastEntry.scanType === "in" &&
-        lastEntry.departmentId !== employeeDeptId
+        updatedLastEntry &&
+        updatedLastEntry.scanType === "in" &&
+        updatedLastEntry.departmentId !== employeeDeptId
     ) {
         await prisma.attendanceEntry.create({
             data: {
                 timestamp: new Date(now.getTime() - 1000),
                 scanType: "out",
-                departmentId: lastEntry.departmentId ?? employeeDeptId,
+                departmentId: updatedLastEntry.departmentId ?? employeeDeptId,
                 scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
@@ -229,6 +258,7 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
             scanType: newScanType,
             departmentId: employeeDeptId,
             scannedBy: user.id,
+            scanMethod: scanMethod,
             autoClosed: false,
             walletId: wallet.id,
         },
@@ -400,6 +430,7 @@ export async function addManualAttendanceEntry(data: {
     scanType: "in" | "out";
     departmentId: string;
     scannedBy?: string; // optional supervisor ID; falls back to logged-in admin
+    scanMethod?: "barcode" | "face";
 }) {
     try {
         const user = await getUserFromCookies();
@@ -431,6 +462,7 @@ export async function addManualAttendanceEntry(data: {
                 scanType: data.scanType,
                 departmentId: resolvedDepartmentId,
                 scannedBy: resolvedScannedBy,
+                scanMethod: data.scanMethod || "barcode",
                 walletId: wallet.id,
                 autoClosed: false,
             },

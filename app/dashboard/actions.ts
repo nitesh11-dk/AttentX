@@ -15,7 +15,7 @@ export type ScanResult =
     message: string;
   };
 
-export async function scanEmployee(empCode: string): Promise<ScanResult> {
+export async function scanEmployee(empCode: string, scanMethod: "barcode" | "face" = "barcode"): Promise<ScanResult> {
   try {
     // 1️⃣ Find employee
     const employee = await prisma.employee.findUnique({
@@ -32,7 +32,7 @@ export async function scanEmployee(empCode: string): Promise<ScanResult> {
     }
 
     // 2️⃣ Perform scan (in/out auto logic — may throw access denied)
-    const result = await scanEmployeeCore({ empCode });
+    const result = await scanEmployeeCore({ empCode, scanMethod });
 
     return {
       success: true,

@@ -1,0 +1,22 @@
+import { Metadata } from "next"
+import FaceRegister from "@/components/FaceRegister"
+
+export const metadata: Metadata = {
+    title: "Face Registration | AttendxPro",
+    description: "Register employee facial profiles for attendance",
+}
+
+export default function RegisterPage() {
+    return (
+        <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-black text-gray-900 tracking-tight">Face Registration</h1>
+                <p className="text-gray-500">Associate and register high-accuracy 3D liveness facial profiles to your employees.</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <FaceRegister />
+            </div>
+        </div>
+    )
+}
