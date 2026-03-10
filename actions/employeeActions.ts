@@ -243,7 +243,9 @@ export async function getEmployeeById(
 ): Promise<ActionResponse<any>> {
   try {
     const emp = await prisma.employee.findUnique({
-      where: { id }, include: {
+      where: { id },
+      include: {
+        faceData: true,
         department: {
           include: {
             cycleTiming: true

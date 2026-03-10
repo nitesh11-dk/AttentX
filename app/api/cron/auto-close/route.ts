@@ -1,90 +1,110 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-    // Basic security (optional): uncomment and set a CRON_SECRET in your .env
-    // const authHeader = request.headers.get('authorization');
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    // }
+export async function GET() {
 
-    console.log("[CRON] Starting Auto-Close Sweep...");
+    console.log("====== AUTO CLOSE CRON ======");
+
     const now = new Date();
-    const AUTOCLOSE_THRESHOLD_MS = 16 * 60 * 60 * 1000 + 5 * 60 * 1000; // 16h 5m
-
-    /** Returns the auto-close OUT timestamp, capped to 23:59:59.999 of the IN's
-     *  local calendar day so the OUT always shows in the same day's logs. */
-    const autoCloseTimestamp = (inTs: Date): Date => {
-        const candidate = new Date(inTs.getTime() + AUTOCLOSE_THRESHOLD_MS);
-        const endOfDay = new Date(inTs);
-        endOfDay.setHours(23, 59, 59, 999);
-        return candidate <= endOfDay ? candidate : endOfDay;
-    };
+    const AUTOCLOSE_THRESHOLD =
+        16 * 60 * 60 * 1000 + 5 * 60 * 1000;
 
     try {
-        // Fetch all wallets with their entries ordered by time
+
         const wallets = await prisma.attendanceWallet.findMany({
             include: {
-                entries: {
-                    orderBy: { timestamp: "asc" },
-                },
-                employee: {
-                    select: { departmentId: true }
-                }
-            },
+                employee: { select: { departmentId: true } },
+                entries: { orderBy: { timestamp: "asc" } }
+            }
         });
 
-        let closedCount = 0;
+        let closed = 0;
 
         for (const wallet of wallets) {
-            // Find currently "open" IN entries for this wallet by replaying history
-            let currentOpenIn: any = null;
-            for (const entry of wallet.entries) {
-                if (entry.scanType === "in") {
-                    currentOpenIn = entry;
-                } else if (entry.scanType === "out") {
-                    currentOpenIn = null; // Closed
-                }
+
+            const entries = wallet.entries;
+
+            const days: Record<string, any[]> = {};
+
+            for (const e of entries) {
+
+                const d = new Date(e.timestamp);
+
+                const key =
+                    d.getFullYear() + "-" +
+                    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+                    String(d.getDate()).padStart(2, "0");
+
+                if (!days[key]) days[key] = [];
+
+                days[key].push(e);
             }
 
-            // If the final state is an open IN and it's older than 16h5m, close it.
-            if (
-                currentOpenIn &&
-                now.getTime() - new Date(currentOpenIn.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS
-            ) {
+            for (const dateKey in days) {
+
+                const dayEntries = days[dateKey];
+
+                const hasIn = dayEntries.some(e => e.scanType === "in");
+                const hasOut = dayEntries.some(e => e.scanType === "out");
+
+                if (!hasIn) continue;
+                if (hasOut) continue;
+
+                const firstIn =
+                    dayEntries.find(e => e.scanType === "in");
+
+                if (!firstIn) continue;
+
+                const inTime = new Date(firstIn.timestamp);
+
+                const elapsed =
+                    now.getTime() - inTime.getTime();
+
+                if (elapsed < AUTOCLOSE_THRESHOLD) continue;
+
+                const endOfDay = new Date(inTime);
+                endOfDay.setHours(23, 59, 59, 999);
+
+                console.log(
+                    "Auto closing:",
+                    wallet.id,
+                    dateKey
+                );
+
                 await prisma.attendanceEntry.create({
                     data: {
-                        timestamp: autoCloseTimestamp(new Date(currentOpenIn.timestamp)),
+                        timestamp: endOfDay,
                         scanType: "out",
-                        departmentId: currentOpenIn.departmentId ?? wallet.employee.departmentId,
-                        scannedBy: currentOpenIn.scannedBy, // maintain the supervisor who scanned IN, or null
-                        autoClosed: true,
                         walletId: wallet.id,
-                        scanMethod: "system", // distinguish cron sweep
-                    },
+                        departmentId:
+                            firstIn.departmentId ??
+                            wallet.employee.departmentId,
+                        scannedBy: null,
+                        autoClosed: true,
+                        scanMethod: "system"
+                    }
                 });
 
-                closedCount++;
-                console.log(`[CRON] Auto-closed dangling IN for employee wallet ${wallet.id}`);
+                closed++;
             }
         }
 
-        console.log(`[CRON] Auto-Close Sweep Finished: Closed ${closedCount} dangling entries.`);
+        console.log("Closed entries:", closed);
 
         return NextResponse.json({
             success: true,
-            message: "Auto-close sweep completed.",
-            stats: {
-                walletsScanned: wallets.length,
-                entriesClosed: closedCount,
-                timestamp: now.toISOString()
-            }
+            closed
         });
 
-    } catch (error: any) {
-        console.error("[CRON] Global Error in Auto-Close Cron Job:", error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    } catch (err: any) {
+
+        console.error(err);
+
+        return NextResponse.json({
+            success: false,
+            error: err.message
+        });
     }
 }

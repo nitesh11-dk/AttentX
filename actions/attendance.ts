@@ -175,48 +175,53 @@ export async function scanEmployee(input: ScanAttendanceInput): Promise<ScanResu
     // with an OUT that arrives the next day.
 
     // To do this reliably, we walk through the history to find currently "open" IN entries
-    let currentOpenIn: any = null;
+    let openIns: any[] = [];
     for (const entry of wallet.entries) {
         if (entry.scanType === "in") {
-            currentOpenIn = entry;
+            openIns.push(entry);
         } else if (entry.scanType === "out") {
-            currentOpenIn = null; // Closed
+            if (openIns.length > 0) openIns.pop(); // Closed
         }
     }
 
-    // If the final state is an open IN and it's older than 16h5m, close it.
-    if (
-        currentOpenIn &&
-        now.getTime() - new Date(currentOpenIn.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS
-    ) {
-        await prisma.attendanceEntry.create({
-            data: {
-                timestamp: autoCloseTimestamp(new Date(currentOpenIn.timestamp)),
+    // Process all open INs and close any that are older than 16h5m.
+    let closedAny = false;
+    for (const openIn of openIns) {
+        if (now.getTime() - new Date(openIn.timestamp).getTime() >= AUTOCLOSE_THRESHOLD_MS) {
+            await prisma.attendanceEntry.create({
+                data: {
+                    timestamp: autoCloseTimestamp(new Date(openIn.timestamp)),
+                    scanType: "out",
+                    departmentId: openIn.departmentId ?? employeeDeptId,
+                    scannedBy: user.id,
+                    autoClosed: true,
+                    walletId: wallet.id,
+                    scanMethod: "system",
+                },
+            });
+
+            // Push this new auto-closed OUT entry into our local wallet.entries array
+            // so the subsequent direction logic ("Step 2") sees it as properly closed
+            wallet.entries.push({
+                id: "temp-auto-closed-" + openIn.id,
+                timestamp: autoCloseTimestamp(new Date(openIn.timestamp)),
                 scanType: "out",
-                departmentId: currentOpenIn.departmentId ?? employeeDeptId,
+                departmentId: openIn.departmentId ?? employeeDeptId,
                 scannedBy: user.id,
                 autoClosed: true,
                 walletId: wallet.id,
-            },
-        });
+                scanMethod: "system",
+            } as any);
 
-        // Push this new auto-closed OUT entry into our local wallet.entries array
-        // so the subsequent direction logic ("Step 2") sees it as properly closed
-        wallet.entries.push({
-            id: "temp-auto-closed",
-            timestamp: autoCloseTimestamp(new Date(currentOpenIn.timestamp)),
-            scanType: "out",
-            departmentId: currentOpenIn.departmentId ?? employeeDeptId,
-            scannedBy: user.id,
-            autoClosed: true,
-            walletId: wallet.id,
-            scanMethod: "system",
-        } as any);
-
-        currentOpenIn = null;
+            closedAny = true;
+        }
     }
 
     // Update `lastEntry` since we might have just pushed an auto-closed OUT
+    // We sort it to ensure the latest chronologically is picked
+    if (closedAny) {
+        wallet.entries.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    }
     const updatedLastEntry = wallet.entries.length > 0 ? wallet.entries[wallet.entries.length - 1] : null;
 
     // ── Step 2: Decide scan direction ──

@@ -139,6 +139,14 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
             <p><strong>PAN:</strong> {employee.panNumber || "N/A"}</p>
             <p><strong>Date of Birth:</strong> {formatDate(employee.dob)}</p>
             <p><strong>Date of Joining:</strong> {formatDate(employee.joinedAt)}</p>
+            <p className="border-t pt-2 mt-2">
+              <strong>Face Registration:</strong>{" "}
+              {employee.faceData && employee.faceData.length > 0 ? (
+                <span className="text-sm text-green-600 font-medium bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">Registered</span>
+              ) : (
+                <span className="text-sm text-red-600 font-medium bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">Pending</span>
+              )}
+            </p>
           </CardContent>
         </Card>
 
