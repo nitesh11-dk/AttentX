@@ -20,7 +20,9 @@ export async function GET(request: Request) {
         // Find all active employees who have a designated department with a cycle
         const employees = await prisma.employee.findMany({
             where: {
-                departmentId: { not: null as any }, // casting to any to bypass TS complaining about strict null checks when it's valid Prisma
+                department: {
+                    cycleTimingId: { not: null }
+                }
             },
             include: {
                 department: {
@@ -29,14 +31,17 @@ export async function GET(request: Request) {
             }
         });
 
+        let processedCount = 0;
         let successCount = 0;
         let skipCount = 0;
         let failCount = 0;
 
         for (const emp of employees) {
+            processedCount++;
             const cycleTimingId = emp.department?.cycleTimingId;
             if (!cycleTimingId) {
                 skipCount++;
+                console.log(`[CRON] [${processedCount}/${employees.length}] SKIPPED (No cycleTimingId): Employee ${emp.name || emp.id}`);
                 continue;
             }
 
@@ -52,12 +57,14 @@ export async function GET(request: Request) {
 
                 if (res.success && res.data) {
                     successCount++;
+                    console.log(`[CRON] [${processedCount}/${employees.length}] SUCCESS: Employee ${emp.name || emp.id}`);
                 } else {
                     skipCount++; // Skipped because majority-days rule says this isn't the month
+                    console.log(`[CRON] [${processedCount}/${employees.length}] SKIPPED: Employee ${emp.name || emp.id}`);
                 }
             } catch (err) {
-                console.error(`[CRON] Failed calculation for employee ${emp.id}:`, err);
                 failCount++;
+                console.error(`[CRON] [${processedCount}/${employees.length}] FAILED: Employee ${emp.name || emp.id}:`, err);
             }
         }
 
