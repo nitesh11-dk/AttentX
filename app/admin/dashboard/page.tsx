@@ -38,7 +38,7 @@ const Page = () => {
       {/* ===============================
          MAIN CONTENT - COMBINED DASHBOARD
       =============================== */}
-      <Suspense fallback={<div className="text-center py-10">Loading dashboard...</div>}>
+      <Suspense fallback={<div className="text-center py-16">Loading dashboard...</div>}>
         <CombinedEmployeeDashboard />
       </Suspense>
     </div>

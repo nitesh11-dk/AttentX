@@ -34,7 +34,7 @@ export function DashboardHeader({
     onStopBulk
 }: DashboardHeaderProps) {
     return (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-3 min-w-0">
                 <div className="bg-blue-600 p-1.5 md:p-2 rounded-lg shadow-blue-100 shadow-lg shrink-0">
                     <Calculator className="h-4 w-4 md:h-5 md:w-5 text-white" />
@@ -55,7 +55,7 @@ export function DashboardHeader({
                 </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center flex-wrap gap-1.5 shrink-0">
                 <Button
                     variant="outline"
                     size="sm"

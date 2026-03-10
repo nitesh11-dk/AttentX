@@ -611,9 +611,9 @@ export function CombinedEmployeeDashboard() {
      RENDER
   ============================ */
   return (
-    <div className="flex flex-col h-full w-full max-w-full bg-slate-50/50">
+    <div className="flex flex-col h-full w-full max-w-full bg-slate-50/50 gap-2">
       {/* 🔹 STICKY TOP FILTER BAR */}
-      <div className="sticky top-0 z-20 w-full max-w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm  py-3 ">
+      <div className="sticky p-2 top-0 z-20 w-full max-w-full bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm   ">
         <div className="max-w-[1600px] mx-auto space-y-3">
           <DashboardHeader
             employeeCount={rows.length}

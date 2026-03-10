@@ -75,10 +75,10 @@ export function EmployeeTable({
     .length;
 
   return (
-    <Card className="w-full max-w-full border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden ring-1 ring-slate-200">
-      <CardContent className="p-0">
+    <Card className="w-full max-w-full border-slate-200  overflow-hidden ring-1 ring-slate-200">
+      <CardContent >
         {/* Export Button Header */}
-        <div className="flex justify-end items-center px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+        <div className="flex  justify-end items-center p-2 border-b border-slate-200 bg-slate-50/50">
           <Button
             onClick={onExportExcel}
             disabled={loading || isExporting || rows.length === 0}
