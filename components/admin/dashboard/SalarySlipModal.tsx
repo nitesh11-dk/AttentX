@@ -80,7 +80,7 @@ export function SalarySlipModal({ isOpen, onClose, employee, summary }: SalarySl
                     <div ref={printRef} className="bg-white p-10 shadow-sm border border-slate-200 mx-auto max-w-[800px] text-slate-800">
                         {/* Header */}
                         <div className="text-center border-b-2 border-slate-900 pb-6 mb-8">
-                            <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Salary Statement</h1>
+                            <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Shree Sai Engineering</h1>
                             <p className="text-sm font-bold text-slate-600 mt-1">
                                 {new Date(summary.cycleStart).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
                             </p>

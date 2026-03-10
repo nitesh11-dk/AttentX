@@ -251,7 +251,7 @@ export function EmployeeRow({
 
             {columnVisibility.rate && (
                 <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 font-medium">
-                    ₹{employee.dailyRate}
+                    ₹{employee.hourlyRate ?? 0}
                 </td>
             )}
 

@@ -126,13 +126,13 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
       </div>
 
       {/* Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ">
         {/* Personal Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Personal Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-2  text-sm">
             <p><strong>Name:</strong> {employee.name}</p>
             <p><strong>Mobile:</strong> {employee.mobile}</p>
             <p><strong>Aadhaar:</strong> {employee.aadhaarNumber}</p>
