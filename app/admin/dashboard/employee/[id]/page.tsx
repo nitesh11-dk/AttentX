@@ -31,7 +31,7 @@ const EmployeeDetailsPage = memo(function EmployeeDetailsPage() {
       setEmployee(cached);
       setDepartment(cached.department);
       setShiftType(cached.shiftType);
-      setCycleTiming(cached.cycleTiming);
+      setCycleTiming(cached.department?.cycleTiming);
       setLoading(false);
       return;
     }
@@ -49,7 +49,7 @@ const EmployeeDetailsPage = memo(function EmployeeDetailsPage() {
       setEmployee(res.data);
       setDepartment(res.data.department);
       setShiftType(res.data.shiftType);
-      setCycleTiming(res.data.cycleTiming);
+      setCycleTiming(res.data.department?.cycleTiming);
       setCachedData(`emp_${employeeId}`, res.data);
     } finally {
       setLoading(false);

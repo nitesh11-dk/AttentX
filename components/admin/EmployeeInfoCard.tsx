@@ -169,7 +169,7 @@ const EmployeeInfoCard = memo(function EmployeeInfoCard({
             <p>
               <strong>Cycle Timing:</strong>{" "}
               {cycleTiming
-                ? `${cycleTiming.name} (Starts: ${cycleTiming.startDay}, Days: ${cycleTiming.lengthDays})`
+                ? `${cycleTiming.name} (Starts: ${cycleTiming.startDay})`
                 : "N/A"}
             </p>
             <p><strong>Hourly Rate:</strong> ₹{employee.hourlyRate}</p>
