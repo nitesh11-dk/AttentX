@@ -110,7 +110,8 @@ export function EmployeeTable({
         ) : (
           <div
             ref={scrollRef}
-            className="relative w-full overflow-auto max-h-[calc(100vh-260px)] md:max-h-[calc(100vh-280px)] cursor-grab active:cursor-grabbing select-none scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent touch-pan-x"
+            className={`relative w-full overflow-auto max-h-[calc(100vh-260px)] md:max-h-[calc(100vh-280px)] cursor-grab active:cursor-grabbing scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent touch-auto ${isDragging ? "select-none" : "select-text"
+              }`}
             onMouseDown={handleMouseDown}
             onMouseLeave={handleMouseLeave}
             onMouseUp={handleMouseUp}
