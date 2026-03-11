@@ -118,7 +118,7 @@ export default function AdminLayout({
                                     key={link.href}
                                     href={link.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-4 py-4 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 active:bg-blue-50 transition-all font-semibold"
+                                    className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 active:bg-blue-50 transition-all font-semibold"
                                 >
                                     <Icon className="h-5 w-5" />
                                     {link.name}
