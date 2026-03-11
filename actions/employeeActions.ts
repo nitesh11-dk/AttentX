@@ -486,3 +486,45 @@ export async function registerFace(
     return { success: false, message: error.message || 'Failed to register employee face' };
   }
 }
+
+/* ----------------------------------------------------
+   GET REGISTERED EMPLOYEES (Those with FaceData)
+---------------------------------------------------- */
+export async function getRegisteredEmployees(): Promise<ActionResponse<any[]>> {
+  try {
+    const employees = await prisma.employee.findMany({
+      where: {
+        faceData: {
+          some: {}
+        }
+      },
+      include: {
+        faceData: true,
+        department: true
+      },
+      orderBy: { name: "asc" }
+    });
+
+    return {
+      success: true,
+      message: "Registered employees fetched successfully",
+      data: employees.map(serializeEmployee)
+    };
+  } catch (error: any) {
+    return { success: false, message: error.message, data: [] };
+  }
+}
+
+/* ----------------------------------------------------
+   DELETE FACE DATA
+---------------------------------------------------- */
+export async function deleteFaceData(employeeId: string): Promise<ActionResponse> {
+  try {
+    await prisma.faceData.deleteMany({
+      where: { employeeId }
+    });
+    return { success: true, message: "Face data deleted successfully" };
+  } catch (error: any) {
+    return { success: false, message: error.message };
+  }
+}
