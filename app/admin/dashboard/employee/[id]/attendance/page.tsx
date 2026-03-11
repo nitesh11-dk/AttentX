@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, memo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User } from "lucide-react";
+import { ArrowLeft, User, FileText } from "lucide-react";
 
 import { getEmployeeById } from "@/actions/employeeActions";
 import { calculateWorkLogs, getAttendanceWallet } from "@/actions/attendance";
@@ -12,6 +12,7 @@ import { calculateWorkLogs, getAttendanceWallet } from "@/actions/attendance";
 import WorkLogTable from "@/components/admin/WorkLogTable";
 import { generateFakeAttendance } from "@/actions/fakeattandace";
 import { useDataCache } from "@/components/providers/DataProvider";
+import { AttendanceReportModal } from "@/components/admin/dashboard/AttendanceReportModal";
 
 const EmployeeAttendancePage = memo(function EmployeeAttendancePage() {
   const params = useParams();
@@ -26,6 +27,7 @@ const EmployeeAttendancePage = memo(function EmployeeAttendancePage() {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [loadingLogs, setLoadingLogs] = useState(true);
   const [loadingEmployee, setLoadingEmployee] = useState(true);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   // -----------------------------------------
   // Load Employee basic info
@@ -157,6 +159,16 @@ const EmployeeAttendancePage = memo(function EmployeeAttendancePage() {
             <User className="h-4 w-4 mr-2" />
             View Profile
           </Button>
+
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowReportModal(true)}
+            className="self-start bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Generate Attendance Report
+          </Button>
           {/* TEMP DEV BUTTON – FAKE ATTENDANCE */}
           {/* <Button
             variant="secondary"
@@ -190,6 +202,15 @@ const EmployeeAttendancePage = memo(function EmployeeAttendancePage() {
         <WorkLogTable
           workLogs={workLogs}
           employeeId={employee.id}
+          allEntries={attendanceWallet?.entries || []}
+        />
+      )}
+
+      {employee && (
+        <AttendanceReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          employee={employee}
           allEntries={attendanceWallet?.entries || []}
         />
       )}

@@ -108,7 +108,7 @@ export function SalarySlipModal({ isOpen, onClose, employee, summary }: SalarySl
                                 </div>
                                 <div className="flex justify-between border-b border-slate-100 pb-1">
                                     <span className="font-bold text-slate-500 uppercase text-[10px]">Bank Account</span>
-                                    <span className="font-mono text-slate-900">{employee.bankAccountNo || "N/A"}</span>
+                                    <span className="font-mono text-slate-900">{employee.bankAccountNumber || "N/A"}</span>
                                 </div>
                             </div>
                         </div>
@@ -130,16 +130,16 @@ export function SalarySlipModal({ isOpen, onClose, employee, summary }: SalarySl
                                     <td className="p-3 font-medium">Days Absent</td>
                                     <td className="p-3 text-right text-red-600 font-bold">{summary.daysAbsent} Days</td>
                                 </tr>
-                                <tr>
+                                {/* <tr>
                                     <td className="p-3 font-medium">Total Worked Hours (Actual)</td>
                                     <td className="p-3 text-right">{summary.totalHours?.toFixed(2)} Hrs</td>
-                                </tr>
-                                <tr className="bg-blue-50/50">
+                                </tr> */}
+                                {/* <tr className="bg-blue-50/50">
                                     <td className="p-3 font-bold text-blue-900">Overtime Hours</td>
                                     <td className="p-3 text-right font-black text-blue-900">{summary.overtimeHours?.toFixed(2)} Hrs</td>
-                                </tr>
+                                </tr> */}
                                 <tr className="bg-slate-50 font-black">
-                                    <td className="p-3">Calculation Base Hours (Total + OT)</td>
+                                    <td className="p-3">Calculation Base Hours (Total )</td>
                                     <td className="p-3 text-right">{(summary.totalHours + summary.overtimeHours).toFixed(2)} Hrs</td>
                                 </tr>
                             </tbody>
@@ -157,6 +157,19 @@ export function SalarySlipModal({ isOpen, onClose, employee, summary }: SalarySl
                                             <span>₹{Number(val || 0).toFixed(2)}</span>
                                         </div>
                                     ))}
+                                    {/* {deductionsEntries.map(([key, val]) => {
+                                        if (key === "shoes") return null;   // 👈 skip
+
+                                        return (
+                                            <div
+                                                key={key}
+                                                className="flex justify-between text-slate-600 border-b border-slate-50 pb-1 italic"
+                                            >
+                                                <span className="capitalize">{key}</span>
+                                                <span>₹{Number(val || 0).toFixed(2)}</span>
+                                            </div>
+                                        );
+                                    })} */}
                                     <div className="flex justify-between text-red-700 font-bold pt-1 border-t-2 border-red-50">
                                         <span>Total Manual Deductions</span>
                                         <span>₹{totalDeductions.toFixed(2)}</span>
