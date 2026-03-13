@@ -155,6 +155,7 @@ async function calculateOneEmployee({
 }) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
+    include: { shiftType: true },
   });
   if (!employee) throw new Error("Employee not found");
 
@@ -239,13 +240,30 @@ async function calculateOneEmployee({
   // daysAbsent = effectiveDaysSinceStart − daysPresent
   const daysAbsent = Math.max(0, effectiveDaysForAbsent - daysPresent);
 
-  const totalHours = workLogs.reduce(
-    (sum: number, d: any) => sum + d.totalHours,
-    0
-  );
+  // --- NEW: SPLIT HOURS INTO REGULAR AND OVERTIME ---
+  let totalRegularHours = 0;
+  let totalOvertimeHours = 0;
 
-  // 🔒 Manual values
-  const overtimeHours = existingSummary?.overtimeHours ?? 0;
+  const shiftHoursLimit = employee.shiftType?.totalHours || 0;
+
+  for (const log of workLogs) {
+    if (shiftHoursLimit > 0) {
+      const reg = Math.min(log.totalHours, shiftHoursLimit);
+      const ot = Math.max(0, log.totalHours - shiftHoursLimit);
+      totalRegularHours += reg;
+      totalOvertimeHours += ot;
+    } else {
+      // Default: No shift assigned, all hours are regular
+      totalRegularHours += log.totalHours;
+    }
+  }
+
+  // 🔒 Manual values - only preserve if they were manually edited
+  // For OT, we now use the calculated value by default unless we want to allow manual overrides later.
+  // The user said "remaining one for that day... should be calculated on stored into the overtime"
+  const overtimeHours = totalOvertimeHours;
+  const totalHours = totalRegularHours;
+
   const advanceAmount = existingSummary?.advanceAmount ?? 0;
   const deductions = (existingSummary?.deductions as any) ?? {
     shoes: 0,
@@ -300,7 +318,7 @@ async function calculateOneEmployee({
       daysAbsent,
       totalHours,
       hourlyRate: employee.hourlyRate,
-      overtimeHours: 0,
+      overtimeHours,
       advanceAmount: 0,
       deductions: { shoes: 0, canteen: 0 },
       netSalary,
@@ -385,6 +403,7 @@ export async function updateMonthlySummary(id: string, data: {
   advanceAmount?: number;
   deductions?: any;
   netSalary?: number;
+  hourlyRate?: number;
 }) {
   try {
     const updated = await prisma.monthlyAttendanceSummary.update({
@@ -394,6 +413,7 @@ export async function updateMonthlySummary(id: string, data: {
         advanceAmount: data.advanceAmount,
         deductions: data.deductions,
         netSalary: data.netSalary,
+        hourlyRate: data.hourlyRate,
       },
       include: {
         employee: true

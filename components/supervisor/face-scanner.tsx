@@ -32,6 +32,15 @@ export default function SupervisorFaceScanner({ onScan, isProcessing, onFacesLoa
     const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
 
+    // Determine if the current camera should be mirrored
+    const isMirrored = React.useMemo(() => {
+        if (!selectedDeviceId) return true; // Default to mirrored (front)
+        const device = devices.find(d => d.deviceId === selectedDeviceId);
+        if (!device) return true;
+        const label = device.label.toLowerCase();
+        return !(label.includes('back') || label.includes('rear') || label.includes('environment'));
+    }, [selectedDeviceId, devices]);
+
     // Confidence mapping
     const getConfidenceScore = (distance: number) => {
         const score = 1.0 - distance * 0.25;
@@ -116,66 +125,19 @@ export default function SupervisorFaceScanner({ onScan, isProcessing, onFacesLoa
 
         setIsScanning(true);
         setScanStatus('scanning');
+        setMessage('Scanning face...');
 
         try {
             const video = webcamRef.current.video;
 
-            // LIVENESS CHECK: 3D Head Pose Challenge
-            const { calculateHeadYaw } = await import('@/lib/faceUtils');
-
-            const livenessStages = [
-
-                // Physical RIGHT turn -> unmirrored frame left -> distRight < distLeft -> yawRatio < 0.65
-                { id: 'right', message: 'LIVENESS CHECK: Turn your head slightly RIGHT', min: 0, max: 0.65 },
-
-                // Physical LEFT turn -> unmirrored frame right -> distRight > distLeft -> yawRatio > 1.5
-                { id: 'left', message: 'LIVENESS CHECK: Turn your head slightly LEFT', min: 1.5, max: 99 },
-
-                // Center check
-                { id: 'straight', message: 'LIVENESS CHECK: Look STRAIGHT at the camera', min: 0.85, max: 1.15 }
-            ];
-
-            let currentStage = 0;
-            const timeoutStart = Date.now();
-
-            // 20 sec Liveness Challenge
-            while (currentStage < livenessStages.length && Date.now() - timeoutStart < 20000) {
-                setMessage(`${livenessStages[currentStage].message} (${20 - Math.floor((Date.now() - timeoutStart) / 1000)}s)`);
-
-                const detections = await faceapi.detectSingleFace(video).withFaceLandmarks();
-                if (detections) {
-                    const jaw = detections.landmarks.getJawOutline();
-                    const nose = detections.landmarks.getNose();
-                    const yawRatio = calculateHeadYaw(jaw, nose);
-
-                    const { min, max } = livenessStages[currentStage];
-                    if (yawRatio >= min && yawRatio <= max) {
-                        currentStage++;
-                        if (currentStage < livenessStages.length) {
-                            setMessage('Good! Next...');
-                            await new Promise((r) => setTimeout(r, 800));
-                        }
-                    }
-                }
-                await new Promise((r) => setTimeout(r, 100));
-            }
-
-            if (currentStage < livenessStages.length) {
-                setScanStatus('error');
-                setMessage('Liveness verification failed. Did not complete head movement challenge in time.');
-                setIsScanning(false);
-                return;
-            }
-
-            setMessage('Liveness verified! Capturing facial alignment...');
-            await new Promise((r) => setTimeout(r, 800));
-
-            // Recognition Phase
-            const finalDetections = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+            // Recognition Phase - Direct & Fast
+            const finalDetections = await faceapi.detectSingleFace(video)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
 
             if (!finalDetections) {
                 setScanStatus('error');
-                setMessage('Face lost during capture. Please stay still.');
+                setMessage('No face detected. Please look at the camera.');
                 setIsScanning(false);
                 return;
             }
@@ -189,10 +151,10 @@ export default function SupervisorFaceScanner({ onScan, isProcessing, onFacesLoa
             } else {
                 // Found a match => call the parent "onScan" using empCode 
                 setScanStatus('matched');
-                setMessage(`Match logic succeeded (Accuracy: ${Math.round(confidence * 100)}%). Processing log...`);
+                setMessage(`Recognized! (Accuracy: ${Math.round(confidence * 100)}%)...`);
 
                 // Wait slightly so the user sees the successful flash before resetting state
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 800));
                 onScan(bestMatch.label); // bestMatch.label is our empCode
                 setScanStatus("idle");
                 setMessage(`Looking for a face...`);
@@ -221,7 +183,7 @@ export default function SupervisorFaceScanner({ onScan, isProcessing, onFacesLoa
                             deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
                             facingMode: selectedDeviceId ? undefined : "user",
                         }}
-                        className="w-full h-full object-cover transform scale-x-[-1]" // mirrored
+                        className={`w-full h-full object-cover transform ${isMirrored ? 'scale-x-[-1]' : ''}`} // mirrored only if front camera
                     />
                 </div>
 

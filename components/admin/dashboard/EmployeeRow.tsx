@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { updateMonthlySummary } from "@/actions/monthlyAttendance";
+import { updateEmployee } from "@/actions/employeeActions";
 import { toast } from "sonner";
 import { DeductionsModal } from "./DeductionsModal";
 import { SalarySlipModal } from "./SalarySlipModal";
@@ -45,6 +46,7 @@ export function EmployeeRow({
     const [isSaving, setIsSaving] = useState(false);
     const [localOT, setLocalOT] = useState(summary?.overtimeHours || 0);
     const [localAdvance, setLocalAdvance] = useState(summary?.advanceAmount || 0);
+    const [localRate, setLocalRate] = useState(summary?.hourlyRate || employee.hourlyRate || 0);
     const [localDeductions, setLocalDeductions] = useState<Record<string, number>>(summary?.deductions || {});
     const [localNetSalary, setLocalNetSalary] = useState(summary?.netSalary || 0);
     const [showDeductionsModal, setShowDeductionsModal] = useState(false);
@@ -55,30 +57,39 @@ export function EmployeeRow({
         if (!isEditing) {
             setLocalOT(summary?.overtimeHours || 0);
             setLocalAdvance(summary?.advanceAmount || 0);
+            setLocalRate(summary?.hourlyRate || employee.hourlyRate || 0);
             setLocalDeductions(summary?.deductions || {});
             setLocalNetSalary(summary?.netSalary || 0);
         }
-    }, [summary, isEditing]);
+    }, [summary, employee.hourlyRate, isEditing]);
 
     const handleSave = async () => {
         if (!summary) return;
         setIsSaving(true);
         try {
+            // 1. Update Global Rate
+            if (localRate !== employee.hourlyRate) {
+                await updateEmployee(employee.id, { hourlyRate: localRate });
+            }
+
+            // 2. Update Monthly Summary
             const res = await updateMonthlySummary(summary.id, {
                 overtimeHours: Math.round(localOT * 100) / 100,
                 advanceAmount: Math.round(localAdvance * 100) / 100,
+                hourlyRate: Math.round(localRate * 100) / 100,
                 deductions: localDeductions,
                 netSalary: Math.round(localNetSalary * 100) / 100,
             });
 
             if (res.success) {
-                toast.success("Summary updated!");
+                toast.success("Summary & Rate updated!");
                 setIsEditing(false);
                 onRecalc(employee); // Sync net salary and refresh UI
             } else {
                 toast.error(res.message);
             }
         } catch (err) {
+            console.error(err);
             toast.error("Cloud Error");
         } finally {
             setIsSaving(false);
@@ -88,6 +99,7 @@ export function EmployeeRow({
     const handleCancel = () => {
         setLocalOT(summary?.overtimeHours || 0);
         setLocalAdvance(summary?.advanceAmount || 0);
+        setLocalRate(summary?.hourlyRate || employee.hourlyRate || 0);
         setLocalDeductions(summary?.deductions || {});
         setLocalNetSalary(summary?.netSalary || 0);
         setIsEditing(false);
@@ -250,8 +262,17 @@ export function EmployeeRow({
             )}
 
             {columnVisibility.rate && (
-                <td className="w-[90px] px-4 py-3 whitespace-nowrap text-gray-900 border-r border-gray-50 font-medium">
-                    ₹{employee.hourlyRate ?? 0}
+                <td className="w-[90px] px-2 py-2 whitespace-nowrap text-gray-900 border-r border-gray-50 font-medium">
+                    {isEditing ? (
+                        <Input
+                            type="number"
+                            value={localRate}
+                            onChange={(e) => setLocalRate(Number(e.target.value))}
+                            className="h-8 text-xs px-1 border-blue-200 focus:border-blue-500"
+                        />
+                    ) : (
+                        `₹${(summary?.hourlyRate ?? employee.hourlyRate ?? 0)}`
+                    )}
                 </td>
             )}
 

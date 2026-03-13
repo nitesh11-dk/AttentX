@@ -141,7 +141,7 @@ export async function exportToExcelServer({
     tillDate: "Till Date",
     present: "Days Present",
     absent: "Days Absent",
-    totalHrs: "Total Hours",
+    totalHrs: "Regular Hours",
     ot: "OT Hours",
     rate: "Hourly Rate",
     joinedAt: "Joined At",

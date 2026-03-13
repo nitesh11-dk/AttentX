@@ -65,6 +65,15 @@ export default function FaceRegister() {
     const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
     const [selectedDeviceId, setSelectedDeviceId] = useState<string>('')
 
+    // Determine if the current camera should be mirrored
+    const isMirrored = React.useMemo(() => {
+        if (!selectedDeviceId) return true; // Default to mirrored (front)
+        const device = devices.find(d => d.deviceId === selectedDeviceId);
+        if (!device) return true;
+        const label = device.label.toLowerCase();
+        return !(label.includes('back') || label.includes('rear') || label.includes('environment'));
+    }, [selectedDeviceId, devices]);
+
     useEffect(() => {
         const init = async () => {
             try {
@@ -371,7 +380,7 @@ export default function FaceRegister() {
                                     deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
                                     facingMode: selectedDeviceId ? undefined : "user"
                                 }}
-                                className="w-full h-full object-cover transform scale-x-[-1]"
+                                className={`w-full h-full object-cover transform ${isMirrored ? 'scale-x-[-1]' : ''}`}
                             />
                         </div>
 

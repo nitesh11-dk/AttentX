@@ -130,16 +130,16 @@ export function SalarySlipModal({ isOpen, onClose, employee, summary }: SalarySl
                                     <td className="p-3 font-medium">Days Absent</td>
                                     <td className="p-3 text-right text-red-600 font-bold">{summary.daysAbsent} Days</td>
                                 </tr>
-                                {/* <tr>
-                                    <td className="p-3 font-medium">Total Worked Hours (Actual)</td>
-                                    <td className="p-3 text-right">{summary.totalHours?.toFixed(2)} Hrs</td>
-                                </tr> */}
-                                {/* <tr className="bg-blue-50/50">
+                                <tr>
+                                    <td className="p-3 font-medium">Regular Hours (Shift)</td>
+                                    <td className="p-3 text-right font-bold">{summary.totalHours?.toFixed(2)} Hrs</td>
+                                </tr>
+                                <tr className="bg-blue-50/50">
                                     <td className="p-3 font-bold text-blue-900">Overtime Hours</td>
                                     <td className="p-3 text-right font-black text-blue-900">{summary.overtimeHours?.toFixed(2)} Hrs</td>
-                                </tr> */}
+                                </tr>
                                 <tr className="bg-slate-50 font-black">
-                                    <td className="p-3">Calculation Base Hours (Total )</td>
+                                    <td className="p-3">Calculation Base Hours (Total)</td>
                                     <td className="p-3 text-right">{(summary.totalHours + summary.overtimeHours).toFixed(2)} Hrs</td>
                                 </tr>
                             </tbody>
