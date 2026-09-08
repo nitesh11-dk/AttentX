@@ -76,3 +76,52 @@ export const calculateHeadYaw = (jaw: faceapi.Point[], nose: faceapi.Point[]) =>
     // > 1.6 = turned the other way (right)
     return leftDist / rightDist;
 };
+
+// Calculate Euclidean distance between two face descriptors
+export const descriptorDistance = (descriptor1: Float32Array, descriptor2: Float32Array): number => {
+    if (!descriptor1 || !descriptor2 || descriptor1.length !== descriptor2.length) {
+        return Infinity;
+    }
+
+    let sum = 0;
+    for (let i = 0; i < descriptor1.length; i++) {
+        const diff = descriptor1[i] - descriptor2[i];
+        sum += diff * diff;
+    }
+    return Math.sqrt(sum);
+};
+
+// Check if a face descriptor matches any existing descriptors
+// Returns the employee name if a match is found, null otherwise
+// Uses stricter threshold (0.4) and requires multiple descriptor matches for accuracy
+export const findMatchingFace = (
+    newDescriptors: number[][],
+    existingFaceData: Array<{ name: string; descriptors: number[][] }>,
+    threshold: number = 0.4
+): string | null => {
+    for (const existing of existingFaceData) {
+        let matchCount = 0;
+        const minMatchesRequired = 3; // Require at least 3 descriptor matches
+
+        for (const newDesc of newDescriptors) {
+            const newDescFloat32 = new Float32Array(newDesc);
+
+            for (const existingDesc of existing.descriptors) {
+                const existingDescFloat32 = new Float32Array(existingDesc);
+                const distance = descriptorDistance(newDescFloat32, existingDescFloat32);
+
+                // Log distance for debugging (can be removed in production)
+                console.log(`Face match distance: ${distance.toFixed(4)} (threshold: ${threshold})`);
+
+                if (distance < threshold) {
+                    matchCount++;
+                    if (matchCount >= minMatchesRequired) {
+                        console.log(`Face matched with ${existing.name} (${matchCount} descriptors matched)`);
+                        return existing.name;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};

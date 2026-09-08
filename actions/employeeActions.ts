@@ -465,6 +465,35 @@ export async function registerFace(
       return { success: false, message: 'Employee not found' };
     }
 
+    // Check for duplicate face across all employees
+    const { findMatchingFace } = await import('@/lib/faceUtils');
+    const allFaceData = await prisma.faceData.findMany({
+      select: {
+        name: true,
+        descriptors: true,
+        employeeId: true
+      }
+    });
+
+    // Filter out the current employee's existing face data (to allow re-registration)
+    // and filter out any null descriptors
+    const otherFaceData = allFaceData
+      .filter(fd => fd.employeeId !== employeeId && fd.descriptors !== null)
+      .map(fd => ({
+        name: fd.name,
+        descriptors: fd.descriptors as number[][]
+      }));
+
+    if (otherFaceData.length > 0) {
+      const matchingEmployeeName = findMatchingFace(descriptors, otherFaceData);
+      if (matchingEmployeeName) {
+        return {
+          success: false,
+          message: `Face already registered with ${matchingEmployeeName}.`
+        };
+      }
+    }
+
     // Delete existing face data for this employee to allow re-registration
     await prisma.faceData.deleteMany({
       where: { employeeId: employeeId }
